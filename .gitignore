@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# macOS
+.DS_Store
+*.swp
+*.swo
+
+# Hermes local (should not be in repo)
+.hermes/
+kanban.db
+*.log

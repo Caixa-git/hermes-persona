@@ -13,6 +13,21 @@ SKILL_FILE="${PERSONA_DIR}/SKILL.md"
 
 echo "🎭 Installing persona skill for Hermes Agent..."
 
+# Step 0: Enable kanban toolset in config
+CONFIG="${HOME}/.hermes/config.yaml"
+if [ -f "$CONFIG" ]; then
+    if grep -q "kanban" "$CONFIG" 2>/dev/null; then
+        echo "   ✅ kanban toolset already enabled"
+    else
+        # Add kanban after hermes-cli in toolsets
+        sed -i '' 's/^- hermes-cli$/- hermes-cli\n- kanban/' "$CONFIG" 2>/dev/null || \
+        echo "   ⚠️  Could not auto-add kanban toolset. Run: hermes config set toolsets hermes-cli,kanban"
+        echo "   ✅ kanban toolset enabled"
+    fi
+else
+    echo "   ⚠️  config.yaml not found. Later run: hermes config set toolsets hermes-cli,kanban"
+fi
+
 # Create persona skill directory
 mkdir -p "$PERSONA_DIR"
 
