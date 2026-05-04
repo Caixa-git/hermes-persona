@@ -25,6 +25,18 @@ A skill-based nature adoption system for Hermes Agent kanban workers. When a wor
 
 Anima operates at a deeper level than persona. When they conflict, **anima prevails**.
 
+## Layer Architecture
+
+```
+Layer 1:  SOUL.md                    ← Original template (not anima)
+Layer 3:  KANBAN_GUIDANCE            ← Priority rules: "nature > role"
+Layer 13: User messages              ← Anima injected here ("You ARE...")
+Layer 13: Tool results               ← Persona injected here ("🏗️ Role...")
+```
+
+Both anima and persona enter at **Layer 13** (same proximity). Explicit social
+framing ("Your nature > your role") is what enforces priority — not layer position.
+
 **Anima is opt-in.** A worker without `--skill anima` proceeds without a defined core nature.
 
 ## Research Foundation
