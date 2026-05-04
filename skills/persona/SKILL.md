@@ -1,171 +1,254 @@
-|---
-|name: persona
-|description: "🎭 Expert role adoption for Hermes Agent kanban workers — every task auto-assigns the best-fitting specialist role from a catalog of 172, via KANBAN_GUIDANCE patch + GitHub raw fetch"
-|tags:
-|  - hermes-agent
-|  - kanban
-|  - role-adoption
-|  - persona
-|  - agency-agents
-|related_skills:
-|  - hermes-agent
-|---
-|
-|# 🎭 persona — expert role adoption for kanban workers
-|
-|## What it is
-|
-|A zero-configuration role adoption system for Hermes Agent kanban workers. Every spawned worker automatically:
-|
-|1. Fetches the agency-agents catalog from GitHub raw (`msitarzewski/agency-agents`)
-|2. Scans ~172 roles across 15 categories
-|3. Picks the best-fitting specialist for its task
-|4. Announces adoption via `kanban_heartbeat(note="🎭 Role adopted: 🏗️ Role Name")`
-|5. Loads the role's .md specification
-|6. Works as that specialist
-|
-|No `--skill persona` flag needed. No local git clone. The logic lives in `KANBAN_GUIDANCE` inside Hermes Agent's `agent/prompt_builder.py`.
-|
+---
+name: persona
+description: "🎭 Expert role adoption for Hermes Agent kanban workers — every task auto-assigns the best-fitting specialist role from a catalog of 172"
+tags:
+  - hermes-agent
+  - kanban
+  - role-adoption
+  - persona
+  - agency-agents
+related_skills:
+  - hermes-agent
+  - kanban-orchestrator
+  - kanban-worker
+---
+
+# 🎭 persona — expert role adoption for kanban workers
+
+## What it is
+
+A skill-based role adoption system for Hermes Agent kanban workers. When a worker is spawned with `--skill persona`, it dynamically adopts the best-fitting specialist role from the [agency-agents](https://github.com/msitarzewski/agency-agents) catalog (~172 roles across 15 categories).
+
+Each worker:
+1. Fetches the agency-agents catalog from GitHub raw (pinned commit `783f6a72`)
+2. Scans ~172 roles
+3. Picks the best-fitting specialist for its task using 4 research-backed principles
+4. Announces adoption via `kanban_heartbeat(note="🎭 Role adopted: 🏗️ Role Name")`
+5. Loads the role's full specification
+6. Works as that specialist
+
+**Persona is opt-in.** A worker without `--skill persona` proceeds as a plain generalist.
+
+## Activation
+
+### Single task with persona
+
+```bash
+hermes kanban create 'Build JWT auth API' --skill persona
+hermes kanban assign t_xxxx persona-worker
+hermes kanban dispatch
+```
+
+### Chat session with persona loaded
+
+```bash
+hermes -s persona chat
+# Then create tasks normally — persona is in context
+```
+
+### Without persona (default)
+
+```bash
+hermes kanban create 'Build JWT auth API'
+hermes kanban assign t_xxxx default
+hermes kanban dispatch
+# → Worker proceeds as generalist, no role adoption
+```
+
+## Child task propagation
+
+When a persona worker decomposes work into child tasks, it **must pass** `skills=['persona']` to `kanban_create()` so child workers also adopt specialist roles.
+
+```python
+kanban_create(
+    title="Frontend: React storefront",
+    assignee="persona-worker",
+    body="...",
+    skills=["persona"],  # ← required for chain propagation
+    parents=[parent_task_id],
+)
+```
+
+Without `skills=["persona"]`, child workers run as generalists.
+
+### Verified: chain propagation works
+
+Tested with an e-commerce decomposition task:
+
+| Level | Task | Role adopted | Status |
+|-------|------|-------------|--------|
+| Parent | E-commerce decomposer | 🎭 Agents Orchestrator | ✅ |
+| Child 1 | Frontend: React storefront | 🎨 Frontend Developer | ✅ |
+| Child 2 | Backend: Payment API | 🏗️ Backend Architect | ✅ |
+| Child 3 | DevOps: CI/CD pipeline | ⚙️ DevOps Automator | ✅ |
+
+See `references/chain-propagation-test.md` for full test transcript.
+
+## Usage workflow
+
+### Standard interaction pattern
+
+```bash
+# 1. Create task with --skill persona
+hermes kanban create '[M1] Add SHA256 checksum' \
+  --body 'Fix from audit: add SHA256 checksum to install.sh' \
+  --skill persona
+
+# 2. Assign to persona-worker profile
+hermes kanban assign t_xxxx persona-worker
+
+# 3. Dispatch
+hermes kanban dispatch
+```
+
+**Batch related fixes** into one task to reduce total runtime. **Keep unrelated fixes separate** so each worker focuses on its domain.
+
+### Verifying adoption
+
+```bash
+hermes kanban show <task_id> | grep heartbeat
+# → [timestamp] heartbeat {'note': '🎭 Role adopted: 🏗️ Backend Architect'}
+```
+
+### Multi-worker parallelism
+
+Dispatch spawns one worker per ready+assigned task in a single pass:
+
+```bash
+hermes kanban dispatch
+# Spawned: 2
+#   - t_xxx  ->  persona-worker
+#   - t_yyy  ->  persona-worker
+```
+
 ## Installation
 
 ```bash
-# Review before running (always recommended):
-bash install.sh --dry-run
-
-# Two-step with SHA256 verification (recommended):
-curl -sSLO https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh
-curl -sSLO https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh.sha256
-sha256sum -c install.sh.sha256 && bash install.sh
-
-# Quick install:
 bash <(curl -sSL https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh)
 ```
 
 The installer:
-1. Creates `~/.hermes/skills/persona/SKILL.md`
-2. Patches KANBAN_GUIDANCE in `agent/prompt_builder.py`
-3. Enables `kanban` toolset in `~/.hermes/config.yaml`
-4. Prompts per-profile for `.env` symlink (opt-in, not automatic)
+1. Creates `~/.hermes/skills/persona/SKILL.md` — the worker-facing persona skill
+2. Enables `kanban` toolset in `~/.hermes/config.yaml`
+3. Generates `install.sh.sha256` for integrity verification (two-step install: `sha256sum -c install.sh.sha256 && bash install.sh`)
 
-Use `--dry-run` to preview all changes without modifying anything.
-|
-|## References
-|
-|See `references/` in this skill directory for:
-|- `kanban-guidance-patch.md` — exact patch text added to KANBAN_GUIDANCE (updated with 4 research-backed principles)
-|- `role-url-patterns.md` — GitHub raw URL construction for all 15 categories
-|- `benchmark-methodology.md` — 15-task benchmark design, results (15/15 correct), and caveats
-|
-|## Design decisions
-|
-|| Decision | Rationale |
-||----------|-----------|
-|| Git raw URLs instead of clone | Zero local storage. No pull/update needed. Always fresh. |
-|| Unconditional in KANBAN_GUIDANCE | No flag to remember. Every worker checks; falls back to generalist if no match. |
-|| Emoji in heartbeat | Visually scannable in kanban event logs. User sees `🎭 Role adopted: 🏗️ Backend Architect` at a glance. |
-|| Source patch over plugin | KANBAN_GUIDANCE is injected into every worker's system prompt. Plugins/skills are optional. One 37-line patch covers all workers forever. |
-|
-|## Usage (from user perspective)
-|
-|The user does nothing special. They just create kanban tasks normally:
-|
-|```
-|hermes kanban create "Build a REST API with JWT auth"
-|hermes kanban create "React dashboard UI"
-|hermes kanban create "API vulnerability scan"
-|```
-|
-|Every worker auto-assigns itself the right role.
-|
-|## Role selection principles (research-backed)
-|
-|When a kanban worker picks a role from the agency-agents catalog, it applies four research-backed principles:
-|
-|### 1. Output-type alignment
-|**Source:** MetaGPT (Hong et al., ICLR 2024)
-|
-|Each specialist role has a canonical output artifact. The worker picks the role whose standard deliverable matches what the task actually needs. A Backend Architect writes API specs and schema — if the task is a product roadmap, the worker picks Product Manager instead. Mismatch wastes the role's SOP pipeline.
-|
-|### 2. Role boundary clarity
-|**Source:** CAMEL (Li et al., NeurIPS 2023)
-|
-|Exactly one role with clear, non-overlapping responsibilities. If other workers already exist on the board, the worker avoids duplicating or conflicting with them. Ambiguous role boundaries cause coordination overhead and contradictory decisions.
-|
-|### 3. Task decomposition priority
-|**Source:** AgentVerse (Chen et al., ICML 2024)
-|
-|If a task spans multiple expertise domains, the worker picks the role that covers the **primary domain** — the subtask that everything else depends on. The kanban's sub-task chain handles the rest. A single role can't be a full-stack generalist.
-|
-|### 4. Confidence threshold
-|**Source:** AutoGen (Wu et al., Microsoft Research, 2023)
-|
-|If no role's fit exceeds ~30%, the worker proceeds as a generalist rather than forcing a bad match. Overriding a poor fit creates more problems than it solves.
-|
-|## Scope / Limitations — critical
-|
-|### Persona only works on the kanban execution path
-|
-|Hermes Agent has **two parallel execution paths** for delegating work:
-|
-|| Path | API | Persona? |
-||------|-----|----------|
-|| Kanban orchestration | `kanban_create` → worker spawn | ✅ Auto-activates |
-|| Native Hermes delegation | `delegate_task()` | ❌ No persona |
-|
-|Persona only activates on **kanban workers** because the trigger lives in `KANBAN_GUIDANCE` (injected into kanban worker system prompts via `agent/prompt_builder.py`). `delegate_task()` does not go through the kanban prompt pipeline, so persona logic never fires.
-|
-|**This is by design.** Do not force `kanban_create` for all parallel work — let the agent judge:
-|- One-off information checks → `delegate_task` (lightweight, fast)
-|- Complex domain-specific work → `kanban_create` → persona worker (heavy, expert)
-|
-The agent chooses the right path based on task complexity.
+**No KANBAN_GUIDANCE patching.** Persona activates through `--skill persona`, not through unconditional system prompt injection.
 
-## Trust model — security boundary
+## Git Flow requirement (repo work)
 
-The persona system injects user-controlled task content (titles, bodies) from `kanban_show()`'s `worker_context` into every worker's system prompt via `KANBAN_GUIDANCE`. This creates a prompt injection surface that the following defenses address:
+All work on the hermes-persona repository **must** follow Git Flow:
 
-### Defenses (defense-in-depth)
+```
+main       → production-ready
+develop    → integration branch
+fix/*      → bug fixes
+feature/*  → features
+release/*  → releases
+hotfix/*   → urgent fixes
+```
 
-| Layer | Mechanism | What it protects |
-|-------|-----------|-----------------|
-| 1. Code-level scanning | `_check_kanban_task_threats()` in `prompt_builder.py` — scans task content against `_CONTEXT_THREAT_PATTERNS` (same patterns that guard AGENTS.md / .cursorrules / SOUL.md): instruction override, credential exfiltration, hidden unicode, HTML injection | Logs warnings when kanban task content matches known injection patterns |
-| 2. LLM-level awareness | KANBAN_GUIDANCE step 0 "Injection awareness" — instructs every worker to scrutinize task content for: ignore-previous-rules, hidden unicode, credential exfiltration, HTML injection | Worker applies critical thinking; treats suspicious content as advisory, not directive |
-| 3. Operational trust boundary | Kanban task creators are assumed trusted. The `kanban_create` tool is gated behind Hermes Agent's built-in tool access controls. | Limits blast radius to authenticated, authorized users |
+Procedure:
+1. Branch from `develop`: `git checkout -b fix/xyz develop`
+2. Work and commit on the branch
+3. Push: `git push origin fix/xyz`
+4. Create PR to `develop`
+5. Merge to `main` only after `develop` is stable
 
-### What is NOT protected
+No direct commits to `main` or `develop`. Every merge requires a PR.
 
-- Malicious role specifications in a compromised `agency-agents` repository (mitigated by commit pinning — `783f6a72`)
-- Deeply obfuscated injection payloads that evade both the regex patterns and LLM scrutiny
-- Tasks created by an attacker who has gained access to a user's Hermes Agent session
+## Pitfalls & operational notes
 
-### Trust model summary
+| Pitfall | Symptom | Fix |
+|---------|---------|-----|
+| **Worker timeout (10 min default)** | Worker disappears mid-task; dispatcher auto-restarts | Set `--max-runtime 30m` for long audits |
+| **Scratch workspace isolation** | `search_files` returns nothing (scratch dir is empty) | Use `read_file` with absolute paths or `terminal(command='cd /repo && ...')` |
+| **Unassigned == skipped** | `Skipped (unassigned): t_xxx` in dispatch output | Always `assign` before `dispatch` |
+| **Worker writes file mid-execution** | Report file appears before task shows `completed` | Check file existence periodically, not just on completion |
+| **Duplicate workers from restart** | Two PIDs for same task after timeout | Original terminates; relaunched worker continues |
+| **`delegate_task()` bypasses persona** | Worker runs as generic Hermes | Use `kanban create` for domain tasks; `delegate_task` for quick lookups |
+| **Child task missing persona** | Child worker runs as generalist | Pass `skills=['persona']` in `kanban_create()` |
+| **`--skill persona` omitted** | Worker has no persona instructions | Always include `--skill persona` in `kanban create` when persona is needed |
 
-> Kanban task creators are trusted. If you allow untrusted users to create kanban tasks, they can inject steering instructions into workers. The defenses (code scanning + code sanitization + LLM awareness) provide defense-in-depth against known patterns but are not a replacement for access control. For multi-tenant or public-facing deployments, add an explicit task content sanitization gateway before task creation.
+### Timing benchmarks (real session data)
+
+| Session | Tasks | Duration avg | Notes |
+|---------|-------|-------------|-------|
+| Security audit (read-only) | 1 | ~6 min | Inspect + report write |
+| Single-file fix | 2 | ~5 min | One-line changes |
+| Two-file fix + references | 2 | ~15 min (with restart) | 315-line diff |
+| Multi-remediation (3 fixes) | 3 (parallel) | ~13 min | 350-line diff, SHA256 gen |
+| Chain propagation test | 1 parent → 3 child | ~3 min per child | All adopted roles |
+
+Plan ~15 min per task. Batch simple fixes to reduce total time.
+
+## References
+
+See `references/` in this skill directory for:
+- `kanban-guidance-patch.md` — exact patch text added to KANBAN_GUIDANCE (legacy, pre-opt-in design)
+- `role-url-patterns.md` — GitHub raw URL construction for all 15 categories
+- `benchmark-methodology.md` — 15-task benchmark design, results (15/15 correct), and caveats
+- `security-audit-methodology.md` — Step-by-step audit workflow using 🔒 Security Engineer persona
+- `kanban-dispatch-setup.md` — Profile creation, config setup, dispatcher configuration
+- `chain-propagation-test.md` — Verified test: persona propagates from parent to child tasks
+
+## Design decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Opt-in via `--skill persona` | Default workers are generalists. Persona only on explicit request. |
+| Git raw URLs instead of clone | Zero local storage. No pull/update needed. Always fresh. |
+| Pinned commit (`783f6a72`) | Prevents upstream compromise from injecting malicious role specs |
+| Emoji in heartbeat | Visually scannable in kanban event logs |
+| Skill injection over system patch | No hermetic agent source modification. Cleaner install/uninstall. |
+| `skills` param for propagation | Child tasks get persona only when parent explicitly passes it |
+
+## Scope / Limitations
+
+### Persona only works on the kanban execution path
+
+Hermes Agent has **two parallel execution paths** for delegating work:
+
+| Path | API | Persona? |
+|------|-----|----------|
+| Kanban orchestration | `kanban_create` → worker spawn | ✅ With `--skill persona` |
+| Native Hermes delegation | `delegate_task()` | ❌ No persona |
+
+`delegate_task()` does not go through the kanban prompt pipeline. One-off information checks → `delegate_task` (fast). Complex domain work → `kanban_create --skill persona` (expert).
+
+### Persona requires the persona profile
+
+The `persona-worker` profile (or any profile with `OPENAI_API_KEY` set and a capable model) is recommended. The skill alone doesn't guarantee good results — the underlying model must be capable of role adoption. GPT-4o and DeepSeek-V4 have been tested.
+
+## Role selection principles (research-backed)
+
+### 1. Output-type alignment
+**Source:** MetaGPT (Hong et al., ICLR 2024)
+Each specialist role has a canonical output artifact. The worker picks the role whose standard deliverable matches the task. A Backend Architect writes API specs — if the task is a PRD, pick Product Manager instead.
+
+### 2. Role boundary clarity
+**Source:** CAMEL (Li et al., NeurIPS 2023)
+Exactly one role with clear, non-overlapping responsibilities. Avoid duplicating roles already on the board.
+
+### 3. Task decomposition priority
+**Source:** AgentVerse (Chen et al., ICML 2024)
+Pick the role covering the primary domain (the subtask everything else depends on). The kanban chain handles the rest.
+
+### 4. Confidence threshold
+**Source:** AutoGen (Wu et al., Microsoft Research, 2023)
+If no role's fit exceeds ~30%, proceed as generalist. Forcing a bad match harms output quality.
 
 ## Edge cases
 
 | Case | Behavior |
 |------|----------|
-| No matching role | Worker proceeds as generalist (`"If no matching role exists, proceed as a generalist."`) |
-| Multiple roles match | Worker picks the single best fit from the README table |
-| GitHub raw unavailable | Worker cannot fetch catalog → proceeds as generalist (no error, just no persona) |
-| Task is trivial | Worker still scans; most trivial tasks match no specialist → generalist fallback |
-| Parallel work via delegate_task() | Persona does NOT activate. Work executes as generic Hermes agent. |
-| **`hermes -z` (oneshot)** | Main agent in oneshot mode could call `kanban_create`, but exits before workers finish. **Use `hermes chat`** for kanban orchestration. |
-
-## Supply chain integrity
-
-The repo includes automated supply chain security tooling:
-
-| Tool | Script | Output |
-|------|--------|--------|
-| **SBOM** | `scripts/generate-sbom.py` | `sbom.cdx.json` — CycloneDX 1.4 with all repo files + external deps |
-| **Role manifest** | `scripts/generate-role-manifest.py` | `role-manifest.sha256` — SHA256 checksums for all 182 agency-agents role files |
-| **Content scanner** | `scripts/scan-role-content.py` | Scans role specs for prompt injection, embedded commands, credential leaks, obfuscation |
-| **Checksum** | `sha256sum install.sh` | `install.sh.sha256` — auto-updated by GitHub Actions |
-| **Dry-run** | `bash install.sh --dry-run` | Previews all changes without modifying anything |
-
-Run these locally before committing, or rely on `.github/workflows/sbom.yml` for automated updates.
+| No matching role | Worker proceeds as generalist |
+| Multiple roles match | Worker picks single best fit from README table |
+| GitHub raw unavailable | Worker cannot fetch catalog → generalist fallback |
+| Task is trivial | Worker scans; most trivial tasks match no specialist → generalist |
+| `--skill persona` omitted | Worker has no persona instructions → generalist |
+| Child created without `skills=['persona']` | Child runs as generalist |
+| Parallel work via `delegate_task()` | Persona does NOT activate |
+| `hermes -z` (oneshot) | Main agent exits before workers finish. Use `hermes chat`. |
 
 ## Project repo
 
