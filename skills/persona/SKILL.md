@@ -159,16 +159,17 @@ No direct commits to `main` or `develop`. Every merge requires a PR.
 ## Pitfalls & operational notes
 
 | Pitfall | Symptom | Fix |
-|---------|---------|-----|
+|---------|---------|------|
 | **Worker timeout (10 min default)** | Worker disappears mid-task; dispatcher auto-restarts | Set `--max-runtime 30m` for long audits |
 | **Scratch workspace isolation** | `search_files` returns nothing (scratch dir is empty) | Use `read_file` with absolute paths or `terminal(command='cd /repo && ...')` |
 | **Unassigned == skipped** | `Skipped (unassigned): t_xxx` in dispatch output | Always `assign` before `dispatch` |
 | **Worker writes file mid-execution** | Report file appears before task shows `completed` | Check file existence periodically, not just on completion |
 | **Duplicate workers from restart** | Two PIDs for same task after timeout | Original terminates; relaunched worker continues |
-| **`delegate_task()` bypasses persona** | Worker runs as generic Hermes | Use `kanban create` for domain tasks; `delegate_task` for quick lookups |
+| **`delegate_task()` is BANNED** | Never use delegate_task — it bypasses persona entirely and is too slow on DeepSeek (100% timeout rate in testing). All sub-tasks go through kanban. | Use `hermes kanban create --skill persona` for ALL sub-tasks. Never reach for delegate_task. |
+| **`git push` / `gh pr` from a worker** | Worker tries to push changes to GitHub — **BANNED**. Workers have no GITHUB_TOKEN and must NOT attempt git operations. Role catalog fetching via curl (read-only) is the only allowed GitHub access. | Workers write files to `$HERMES_KANBAN_WORKSPACE`. **If a file needs to be committed to the repo, flag it to the orchestrator via `kanban_complete(metadata={"needs_commit": ["path/to/file"], "branch_hint": "fix/xxx"})`** or add a `kanban_comment` tagging the orchestrator. The orchestrator handles all GitHub operations. |
 | **Child task missing persona** | Child worker runs as generalist | Pass `skills=['persona']` in `kanban_create()` |
 | **`--skill persona` omitted** | Worker has no persona instructions | Always include `--skill persona` in `kanban create` when persona is needed |
-
+| **Test not updated after activation change** | `test_benchmark.py` checks prompt_builder.py but the activation source moved to SKILL.md → 36/47 tests fail | Run `python3 test_benchmark.py` after any change to persona activation mechanism. Update Part 1's `get_persona_skill()` if the source file path changes again. |
 ### Timing benchmarks (real session data)
 
 | Session | Tasks | Duration avg | Notes |
@@ -187,9 +188,15 @@ See `references/` in this skill directory for:
 - `kanban-guidance-patch.md` — exact patch text added to KANBAN_GUIDANCE (legacy, pre-opt-in design)
 - `role-url-patterns.md` — GitHub raw URL construction for all 15 categories
 - `benchmark-methodology.md` — 15-task benchmark design, results (15/15 correct), and caveats
-- `security-audit-methodology.md` — Step-by-step audit workflow using 🔒 Security Engineer persona
-- `kanban-dispatch-setup.md` — Profile creation, config setup, dispatcher configuration
 - `chain-propagation-test.md` — Verified test: persona propagates from parent to child tasks
+- `docker-smoke-test.md` — Clean Docker environment smoke test with 3-scenario verification
+- `dispatcher-worker-architecture.md` — Model hierarchy: Dispatcher(Pro) → Worker(Flash)
+- `external-system-integration-review.md` — Methodology for evaluating external project integration
+- `kanban-dispatch-setup.md` — Profile creation, config setup, dispatcher configuration
+- `korean-usage-patterns.md` — Korean language activation patterns (발동/이용/사용) with examples
+- `matching-improvement-research.md` — Research notes on improving role matching accuracy
+- `multi-agent-cross-validation.md` — Parallel N workers with consensus/disagreement tracking
+- `security-audit-methodology.md` — Step-by-step security audit workflow using 🔒 Security Engineer persona
 
 ## Design decisions
 
@@ -247,7 +254,9 @@ If no role's fit exceeds ~30%, proceed as generalist. Forcing a bad match harms 
 | Task is trivial | Worker scans; most trivial tasks match no specialist → generalist |
 | `--skill persona` omitted | Worker has no persona instructions → generalist |
 | Child created without `skills=['persona']` | Child runs as generalist |
-| Parallel work via `delegate_task()` | Persona does NOT activate |
+| `delegate_task()` | Persona does NOT activate |
+| GitHub push via `gh` CLI or `git push` | **BANNED** — workers must NOT use GitHub tokens for write operations. Role catalog fetching via `curl` (read-only) is allowed. If a file needs committing, flag via `kanban_complete(metadata={"needs_commit": [...]})` → orchestrator handles it. |
+| Worker tries `git commit` or `git push` | The scratch workspace is NOT a git repository. If the worker needs to create files, it writes to `$HERMES_KANBAN_WORKSPACE` and the orchestator picks them up. |
 | `hermes -z` (oneshot) | Main agent exits before workers finish. Use `hermes chat`. |
 
 ## Project repo
