@@ -21,6 +21,9 @@
     <img src="https://img.shields.io/badge/roles_from-agency_agents_172_experts-FF6B6B?style=flat-square" alt="Agency Agents">
   </a>
   <img src="https://img.shields.io/badge/tests-47_passing-22c55e?style=flat-square" alt="47 tests">
+  <a href="https://github.com/Caixa-git/hermes-persona/actions/workflows/ci.yml">
+    <img src="https://github.com/Caixa-git/hermes-persona/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
   <img src="https://img.shields.io/badge/setup-one_command-grey?style=flat-square" alt="setup">
 </p>
 
