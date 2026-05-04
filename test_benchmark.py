@@ -18,6 +18,9 @@ import urllib.request
 PASS = 0
 FAIL = 0
 
+# Configurable base path — overridable via env for profile context compatibility
+PERSONA_BASE = os.environ.get("HERMES_PERSONA_BASE") or os.path.expanduser("~")
+
 def test(name, condition, detail=""):
     global PASS, FAIL
     if condition:
@@ -32,8 +35,7 @@ def test(name, condition, detail=""):
 
 def get_kb_guidance():
     """Read research principles from persona SKILL.md (source of truth since opt-in transition)"""
-    home = os.path.expanduser("~")
-    skill_path = os.path.join(home, ".hermes", "skills", "persona", "SKILL.md")
+    skill_path = os.path.join(PERSONA_BASE, ".hermes", "skills", "persona", "SKILL.md")
     with open(skill_path) as f:
         return f.read()
 
@@ -146,8 +148,7 @@ print("📋 [4/6] Hermes config — kanban in toolsets")
 print("-" * 50)
 
 def check_kanban_in_config():
-    home = os.path.expanduser("~")
-    config_path = os.path.join(home, ".hermes", "config.yaml")
+    config_path = os.path.join(PERSONA_BASE, ".hermes", "config.yaml")
     if not os.path.exists(config_path):
         return False, f"Config file not found at {config_path}"
     with open(config_path) as f:
@@ -162,8 +163,7 @@ print("📋 [5/6] Persona skill — SKILL.md with research principles")
 print("-" * 50)
 
 def check_persona_skill():
-    home = os.path.expanduser("~")
-    skill_path = os.path.join(home, ".hermes", "skills", "persona", "SKILL.md")
+    skill_path = os.path.join(PERSONA_BASE, ".hermes", "skills", "persona", "SKILL.md")
     if not os.path.exists(skill_path):
         return False, f"SKILL.md not found at {skill_path}"
     with open(skill_path) as f:
@@ -179,7 +179,7 @@ skill_ok, skill_detail = check_persona_skill()
 test("Persona SKILL.md exists and has research principles", skill_ok, skill_detail)
 
 # --- Part 6: Repository essential files ---
-print("📋 [6/6] Repository — essential files present")
+print("\U0001f4cb [6/7] Repository — essential files present")
 print("-" * 50)
 
 repo_path = os.path.dirname(os.path.abspath(__file__))
@@ -190,6 +190,44 @@ for fname in required_files:
     test(f"Repo file: {fname}", exists, f"Path: {fpath}" if not exists else "")
 
 # --- Final summary ---
+# --- Part 7: Script syntax validation ---
+print("\U0001f4cb [7/7] Script syntax validation")
+print("-" * 50)
+
+repo_path = os.path.dirname(os.path.abspath(__file__))
+
+# Python scripts
+py_scripts = [
+    "scripts/generate-role-manifest.py",
+    "scripts/generate-sbom.py",
+    "scripts/scan-role-content.py",
+]
+import subprocess
+for script in py_scripts:
+    path = os.path.join(repo_path, script)
+    result = subprocess.run(
+        [sys.executable, "-m", "py_compile", path],
+        capture_output=True, text=True
+    )
+    test(f"Python syntax: {script}", result.returncode == 0, result.stderr)
+
+# Bash scripts
+bash_scripts = ["install.sh"]
+for script in bash_scripts:
+    path = os.path.join(repo_path, script)
+    result = subprocess.run(
+        ["bash", "-n", path],
+        capture_output=True, text=True
+    )
+    test(f"Shell syntax: {script}", result.returncode == 0, result.stderr)
+
+# Verify install.sh references opt-in design
+install_path = os.path.join(repo_path, "install.sh")
+with open(install_path) as f:
+    install_content = f.read()
+mentions_optin = "--skill persona" in install_content or "opt-in" in install_content.lower()
+test("install.sh references opt-in design", mentions_optin)
+
 print()
 print("=" * 60)
 total = PASS + FAIL
