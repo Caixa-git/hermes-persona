@@ -33,9 +33,11 @@
 
 ## What it does
 
-When Hermes Agent processes a kanban task, it analyzes the work and automatically picks the most suitable expert role from the [agency-agents](https://github.com/msitarzewski/agency-agents) catalog — **172 specialists across 15 domains**.
+When Hermes Agent processes a kanban task with the `--skill persona` flag, it analyzes the work and automatically picks the most suitable expert role from the [agency-agents](https://github.com/msitarzewski/agency-agents) catalog — **172 specialists across 15 domains**.
 
 Each specialist comes with its own rules, workflows, and quality standards. The worker doesn't just execute the task — it executes it *as that expert*.
+
+**Persona is opt-in.** Omit `--skill persona` and the worker proceeds as a plain generalist.
 
 ---
 
@@ -43,11 +45,11 @@ Each specialist comes with its own rules, workflows, and quality standards. The 
 
 ### 🖐️ The one-line way
 
-Create a kanban task with a natural-language description. Assign it to `persona-worker`. Dispatch. The system does the rest.
+Create a kanban task with `--skill persona`, assign it to `persona-worker`, dispatch. The system does the rest.
 
 ```bash
-# 1. Create a task (just say what needs to be done)
-hermes kanban create 'Add JWT auth to the payment API'
+# 1. Create a task — must include --skill persona to activate role adoption
+hermes kanban create 'Add JWT auth to the payment API' --skill persona
 
 # 2. Assign to the persona profile
 hermes kanban assign t_xxxx persona-worker
@@ -60,11 +62,24 @@ hermes kanban assign t_xxxx persona-worker
 hermes kanban dispatch
 ```
 
-That's it. A single `create → assign → dispatch` cycle. The worker announces its adopted role via heartbeat:
+That's it. A single `create --skill persona → assign → dispatch` cycle. The worker announces its adopted role via heartbeat:
 
 ```
 [17:34] heartbeat 🎭 Role adopted: 🏗️ Backend Architect
 ```
+
+### 💬 Natural language patterns
+
+When chatting with Hermes, any of these phrasings work:
+
+| Pattern | Example | What happens |
+|---------|---------|-------------|
+| Explicit `--skill persona` | `Do X using persona` | Worker spawns with `--skill persona`, adopts expert role |
+| Natural language request | `Using persona, do X` | System detects persona request, passes `--skill persona` |
+| Conditional activation | `Do X, use persona if needed` | Generalist by default, activates persona when task complexity warrants it |
+| Playful variant | `Activate persona!` | Same behavior, fun phrasing |
+
+The first two patterns guarantee persona activation. The conditional pattern delegates the decision to the system — persona fires only when the task is complex enough to justify it. The playful variant is equivalent to pattern 1.
 
 ### 🧠 During a chat session
 
@@ -75,7 +90,7 @@ hermes chat
 ```
 
 ```
-👤 "Build an e-commerce platform with payment integration"
+👤 "Build an e-commerce platform using persona"
 ```
 
 The system automatically:
@@ -97,7 +112,8 @@ Point the persona system at an existing document:
 
 ```bash
 hermes kanban create '[M1] install.sh — Add SHA256 checksum verification' \
-  --body 'Fix M1 from SECURITY_AUDIT.md: add SHA256 ...'
+  --body 'Fix M1 from SECURITY_AUDIT.md: add SHA256 ...' \
+  --skill persona
 hermes kanban assign t_xxxx persona-worker
 hermes kanban dispatch
 ```
@@ -106,7 +122,7 @@ The worker reads the task, fetches the security report, picks 🔒 Security Engi
 
 ### 🧩 Persona propagates to sub-tasks
 
-When a persona worker decomposes its task into sub-tasks, **every sub-task also adopts its own specialist role**. The persona system propagates through the kanban chain automatically.
+When a persona worker decomposes its task into sub-tasks, **every sub-task also adopts its own specialist role** — because the parent passes `skills=["persona"]` to `kanban_create()`.
 
 Example — one task decomposes into 3 specialists:
 
@@ -117,12 +133,8 @@ Parent: "E-commerce platform" → 🎭 Agents Orchestrator
   └── "DevOps: CI/CD pipeline"     → ⚙️ DevOps Automator
 ```
 
-This works because the `kanban_create()` tool supports a `skills` parameter — the parent worker passes `skills=["persona"]` when creating child tasks, and each child worker independently fetches the agency-agents catalog to adopt the best-fitting role for its specific sub-task.
-
-No flags. No `--skill persona`. Every worker picks its own role automatically.
-
-| Your task | The worker adopts |
-|-----------|-----------------|
+| Your task (English) | The worker adopts |
+|--------------------|-----------------|
 | Build a React dashboard | 🎨 Frontend Developer |
 | Set up CI/CD pipeline | 🚀 DevOps Automator |
 | Optimize PostgreSQL queries | 🗄️ Database Optimizer |
@@ -131,21 +143,30 @@ No flags. No `--skill persona`. Every worker picks its own role automatically.
 | Build an iOS login screen | 📱 Mobile App Builder |
 | Plan product roadmap | 📋 Product Manager |
 
+| Your request | The worker adopts |
+|-------|-----------------|
+| `Activate persona, build a React dashboard` | 🎨 Frontend Developer |
+| `Using persona, run a security audit` | 🔒 Security Engineer |
+| `Optimize the DB, use persona if needed` | 🗄️ Database Optimizer |
+
 ---
 
 ## How it works
 
-Every kanban worker reads the built-in role adoption section in `KANBAN_GUIDANCE` (injected by Hermes Agent into every worker's system prompt):
+Every persona-enabled kanban worker starts by loading the persona skill (injected via `--skill persona` activating `~/.hermes/skills/persona/SKILL.md`):
 
 ```
-Worker spawns
-  → reads KANBAN_GUIDANCE (persona section built-in)
-  → fetches agency-agents README via GitHub raw
-  → scans 172 roles, picks the best match
+Worker spawns with --skill persona
+  → loads persona SKILL.md into system prompt
+  → fetches agency-agents README via GitHub raw (pinned commit)
+  → scans 172 roles, applies 4 research principles
+  → picks the best match
   → logs "🎭 Role adopted: 🏗️ Backend Architect" via kanban_heartbeat
   → downloads the role's full .md specification
   → executes the task as that specialist
 ```
+
+**Without `--skill persona`, the worker has no persona instructions and proceeds as a generalist.** No hidden role adoption, no unconditional system prompt injection.
 
 No local repo, no cloning, no management overhead. All role data is fetched on demand.
 
@@ -211,7 +232,8 @@ In one case — production outage response — the system chose 🚨 Incident Re
 | Limitation | Detail |
 |------------|--------|
 | **`-z` / --oneshot** | Kanban orchestration requires a persistent session. `hermes -z` is one-shot and exits before workers finish. Use `hermes chat` and tell it what you want naturally. |
-| **`delegate_task()`** | Native Hermes sub-agents don't go through the kanban pipeline — persona only activates for kanban workers. |
+| **`delegate_task()`** | Native Hermes sub-agents don't go through the kanban pipeline — persona only activates for kanban workers with `--skill persona`. |
+| **`--skill persona` omitted** | Worker has no persona instructions → proceeds as generalist. Persona is opt-in, not automatic. |
 
 ---
 
@@ -222,7 +244,7 @@ Hermes Agent must be installed first.
 ### ⚠️  Security — review before running
 
 Always review scripts before execution, especially from the internet. The installer
-modifies Hermes Agent source and symlinks credential files.
+creates the persona skill file and configures your Hermes setup.
 
 ### Recommended: two-step with SHA256 verification
 
@@ -239,10 +261,12 @@ bash <(curl -sSL https://raw.githubusercontent.com/Caixa-git/hermes-persona/main
 ```
 
 The installer:
-- Adds the `kanban` toolset to your config (chat can create/dispatch tasks)
-- Patches KANBAN_GUIDANCE with the persona role-adoption section
-- Places a reference skill at `~/.hermes/skills/persona/`
+- Creates `~/.hermes/skills/persona/SKILL.md` — the worker-facing persona skill
+- Enables the `kanban` toolset in your Hermes config
+- Generates `install.sh.sha256` for future integrity verification
 - **Prompts per-profile** for `.env` symlink (opt-in, not automatic)
+
+**No KANBAN_GUIDANCE patching.** Persona activates through `--skill persona` when creating a kanban task, not through unconditional system prompt injection. Clean install and uninstall.
 
 ### Credential scoping
 
@@ -273,9 +297,11 @@ All 172 specialist role definitions are sourced from the agency-agents repositor
 
 ## Roadmap
 
-- [x] Automatic role selection — 172 experts, no flags, immediate
+- [x] Opt-in role selection — 172 experts, activate via `--skill persona`
 - [x] Emoji identification — roles are visible in the kanban task list
+- [x] Opt-in design — persona activates only when explicitly requested
 - [ ] **Smarter matching** — multi-dimensional scoring (domain, activity, tech stack, complexity)
+- [ ] **Docker smoke test** — verify clean-install behavior in isolated container
 
 ---
 

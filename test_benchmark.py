@@ -2,7 +2,7 @@
 """
 🎭 Hermes Persona — Role Selection Benchmark
 
-Validates that the KANBAN_GUIDANCE persona section contains
+Validates that the persona SKILL.md contains
 the 4 research-backed principles and that key role-to-task
 mappings are referenced correctly.
 
@@ -30,11 +30,11 @@ def test(name, condition, detail=""):
             marker += f"\n     └─ {detail}"
         print(marker)
 
-def get_kb_guidance():
-    """Read KANBAN_GUIDANCE from prompt_builder.py"""
+def get_persona_skill():
+    """Read persona SKILL.md (contains the 4 research principles)"""
     home = os.path.expanduser("~")
-    pb_path = os.path.join(home, ".hermes", "hermes-agent", "agent", "prompt_builder.py")
-    with open(pb_path) as f:
+    skill_path = os.path.join(home, ".hermes", "skills", "persona", "SKILL.md")
+    with open(skill_path) as f:
         return f.read()
 
 def fetch_readme():
@@ -54,11 +54,11 @@ print("=" * 60)
 print("🎭 Hermes Persona — Role Selection Benchmark")
 print("=" * 60)
 
-# --- Part 1: KANBAN_GUIDANCE integrity ---
-print("\n📋 [1/3] KANBAN_GUIDANCE — Principles present")
+# --- Part 1: Persona SKILL.md integrity ---
+print("\n📋 [1/3] Persona SKILL.md — Principles present")
 print("-" * 50)
 
-guidance = get_kb_guidance()
+guidance = get_persona_skill()
 
 # Check all 4 principles are present
 principles = [
