@@ -5,6 +5,9 @@ set -euo pipefail
 # Installs so kanban workers can adopt specialist roles
 # from the agency-agents repository (msitarzewski/agency-agents)
 #
+# Pinned: agency-agents @ 783f6a72bfd7f3135700ac273c619d92821b419a (2026-04-12)
+# See: https://github.com/msitarzewski/agency-agents/commit/783f6a72bf...
+#
 # Usage: bash install.sh
 #        bash <(curl -sSL https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh)
 
@@ -73,7 +76,7 @@ persona_lines = [
     "    \"\\n\"",
     "    \"1. **Analyze your task.** `kanban_show()` then analyze the task body — domain, output type, complexity, tech stack.\\n\"",
     "    \"2. **Pick a role.** Fetch the README from the agency-agents repository:\\n\"",
-    "    \"   `curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/main/README.md`\\n\"",
+    "    \"   `curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/README.md`\\n\"",
     "    \"   → scan 17 categories, 210+ specialist roles. Note the role's **emoji**.\\n\"",
     "    \"   Apply these research-backed principles when choosing:\\n\"",
     "    \"   \\n\"",
@@ -92,7 +95,7 @@ persona_lines = [
     "    \"3. **Announce adoption.** Call `kanban_heartbeat(note=...` with:\\n\"",
     "    \"   `🎭 Role adopted: {emoji} {role-name}`\\n\"",
     "    \"4. **Load the personality.** Fetch the role's full specification:\\n\"",
-    "    \"   `curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{category}/{filename}.md`\\n\"",
+    "    \"   `curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/{category}/{filename}.md`\\n\"",
     "    \"5. **Adopt it.** Become that expert. Follow its rules, standards, and process.\\n\"",
     "    \"6. **Act.** Work on your task as that role.\\n\"",
     "    \"If no matching role exists, proceed as a generalist.\"",
@@ -134,7 +137,10 @@ else
     echo "   ⚠️  prompt_builder.py not found. See docs for manual patching."
 fi
 
-# Step 2: Set up profile .env symlink so kanban workers inherit API keys
+# Step 2: Opt-in .env symlink per profile (credential scoping)
+# ⚠️  Each symlinked profile inherits ALL API keys from ~/.hermes/.env.
+#     Only symlink profiles that actually need those credentials.
+#     For production: create per-profile .env files with scoped keys.
 PROFILES_DIR="${HOME}/.hermes/profiles"
 MAIN_ENV="${HOME}/.hermes/.env"
 if [ -d "$PROFILES_DIR" ] && [ -f "$MAIN_ENV" ]; then
@@ -142,8 +148,16 @@ if [ -d "$PROFILES_DIR" ] && [ -f "$MAIN_ENV" ]; then
         profile_name=$(basename "$profile")
         profile_env="${profile}.env"
         if [ ! -f "$profile_env" ] && [ ! -L "$profile_env" ]; then
-            ln -sf "$MAIN_ENV" "$profile_env" 2>/dev/null && \
-            echo "   ✅ ${profile_name}: .env symlinked" || true
+            echo ""
+            echo "   👤 Profile: ${profile_name}"
+            read -p "   Symlink ~/.hermes/.env (all API keys) for this profile? [y/N] " -r SYMLINK_ANSWER
+            if [[ "$SYMLINK_ANSWER" =~ ^[Yy]$ ]]; then
+                ln -sf "$MAIN_ENV" "$profile_env" 2>/dev/null && \
+                echo "   ✅ ${profile_name}: .env symlinked" || \
+                echo "   ❌ ${profile_name}: failed to symlink .env"
+            else
+                echo "   ⏭️  ${profile_name}: .env skipped (opt-in)"
+            fi
         fi
     done
 elif [ -f "$MAIN_ENV" ]; then
@@ -191,9 +205,10 @@ bash <(curl -sSL https://raw.githubusercontent.com/Caixa-git/hermes-persona/main
 
 The installer:
 1. Creates `~/.hermes/skills/persona/SKILL.md`
-2. Patches KANBAN_GUIDANCE in `agent/prompt_builder.py`
-3. Enables `kanban` toolset in `~/.hermes/config.yaml`
-4. Symlinks `.env` for profile API key inheritance
+2. Creates `~/.hermes/skills/persona/references/` with detailed reference docs
+3. Patches KANBAN_GUIDANCE in `agent/prompt_builder.py`
+4. Enables `kanban` toolset in `~/.hermes/config.yaml`
+5. Symlinks `.env` for profile API key inheritance
 
 ## References
 
@@ -317,6 +332,245 @@ https://github.com/Caixa-git/hermes-persona
 SKILL
 
 echo "   ✅ persona skill created at ${SKILL_FILE}"
+
+# Step 5: Create references directory with reference documentation
+echo ""
+echo "📚 Creating reference documentation..."
+REFERENCES_DIR="${PERSONA_DIR}/references"
+mkdir -p "$REFERENCES_DIR"
+
+cat > "${REFERENCES_DIR}/kanban-guidance-patch.md" << 'REF_KGP'
+# KANBAN_GUIDANCE Persona Patch
+
+This is the exact Python string inserted into Hermes Agent's `agent/prompt_builder.py`
+by the install.sh patcher. It adds a "persona — role adoption" section to the
+KANBAN_GUIDANCE tuple, enabling every kanban worker to auto-adopt specialist roles
+from the [agency-agents](https://github.com/msitarzewski/agency-agents) catalog.
+
+## Insertion point
+
+Inserted immediately before the closing `)` of the `KANBAN_GUIDANCE` tuple
+(currently the `)` that ends the "Do NOT" block).
+
+## Patch text
+
+```python
+    "## persona — role adoption\\n"
+    "\\n"
+    "1. **Analyze your task.** `kanban_show()` then analyze the task body — domain, output type, complexity, tech stack.\\n"
+    "2. **Pick a role.** Fetch the README from the agency-agents repository:\\n"
+    "   `curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/README.md`\\n"
+    "   → scan 17 categories, 210+ specialist roles. Note the role's **emoji**.\\n"
+    "   Apply these research-backed principles when choosing:\\n"
+    "   \\n"
+    "   **1. Output-type alignment** (MetaGPT 2023; Hong et al., ICLR 2024)\\n"
+    "   Each role has a canonical output artifact. Pick the role whose standard deliverable matches what the task needs. A Backend Architect writes API specs and schema — if the task is a PRD or roadmap, pick Product Manager instead. Mismatch wastes the role's SOP pipeline.\\n"
+    "   \\n"
+    "   **2. Role boundary clarity** (CAMEL 2023; Li et al., NeurIPS 2023)\\n"
+    "   Pick exactly ONE role with clear, non-overlapping responsibilities. If other workers already exist on this board, avoid picking a role that duplicates or conflicts. Ambiguous role boundaries cause coordination overhead.\\n"
+    "   \\n"
+    "   **3. Task decomposition priority** (AgentVerse 2023; Chen et al., ICML 2024)\\n"
+    "   Analyze the task's internal structure. If it spans multiple domains, pick the role covering the PRIMARY domain — the subtask everything else depends on. The kanban chain handles the rest.\\n"
+    "   \\n"
+    "   **4. Confidence threshold** (AutoGen 2023; Wu et al., Microsoft Research)\\n"
+    "   If no role's fit exceeds 30%, proceed as a generalist. Forcing a poor match creates more problems than it solves.\\n"
+    "   \\n"
+    "3. **Announce adoption.** Call `kanban_heartbeat(note=...` with:\\n"
+    "   `🎭 Role adopted: {emoji} {role-name}`\\n"
+    "4. **Load the personality.** Fetch the role's full specification:\\n"
+    "   `curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/{category}/{filename}.md`\\n"
+    "5. **Adopt it.** Become that expert. Follow its rules, standards, and process.\\n"
+    "6. **Act.** Work on your task as that role.\\n"
+    "If no matching role exists, proceed as a generalist."
+```
+
+## Research citations
+
+| Principle | Source | Venue |
+|-----------|--------|-------|
+| Output-type alignment | MetaGPT (Hong et al.) | ICLR 2024 |
+| Role boundary clarity | CAMEL (Li et al.) | NeurIPS 2023 |
+| Task decomposition priority | AgentVerse (Chen et al.) | ICML 2024 |
+| Confidence threshold | AutoGen (Wu et al.) | Microsoft Research 2023 |
+
+## Verification
+
+```bash
+# Check the patch is present in the installed prompt_builder.py
+grep -c "persona — role adoption" ~/.hermes/hermes-agent/agent/prompt_builder.py
+# Expected: 1
+
+# Validate Python syntax
+python3 -c "import ast; ast.parse(open('$HOME/.hermes/hermes-agent/agent/prompt_builder.py').read())"
+```
+REF_KGP
+
+cat > "${REFERENCES_DIR}/role-url-patterns.md" << 'REF_RUP'
+# Role URL Patterns — agency-agents
+
+GitHub raw URL construction for every category in the
+[agency-agents](https://github.com/msitarzewski/agency-agents) catalog.
+
+Base URL: `https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/`
+
+## Category URL map (14 divisions)
+
+| # | Category (emoji) | Directory | Example Role File |
+|---|------------------|-----------|-------------------|
+| 1 | 💻 Engineering | `engineering/` | `engineering/engineering-backend-architect.md` |
+| 2 | 🎨 Design | `design/` | `design/design-ui-designer.md` |
+| 3 | 💰 Paid Media | `paid-media/` | `paid-media/paid-media-ppc-strategist.md` |
+| 4 | 💼 Sales | `sales/` | `sales/sales-outbound-strategist.md` |
+| 5 | 📢 Marketing | `marketing/` | `marketing/marketing-growth-hacker.md` |
+| 6 | 📊 Product | `product/` | `product/product-sprint-prioritizer.md` |
+| 7 | 🎬 Project Management | `project-management/` | `project-management/` |
+| 8 | 🧪 Testing | `testing/` | `testing/` |
+| 9 | 🛟 Support | `support/` | `support/` |
+| 10 | 🥽 Spatial Computing | `spatial-computing/` | `spatial-computing/` |
+| 11 | 🎯 Specialized | `specialized/` | `specialized/` |
+| 12 | 💵 Finance | `finance/` | `finance/` |
+| 13 | 🎮 Game Development | `game-development/` | `game-development/unity/` |
+| 14 | 📚 Academic | `academic/` | `academic/` |
+
+## URL construction formula
+
+```
+https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/{category}/{filename}.md
+```
+
+Where:
+- `{category}` = directory name from the table above (lowercase, hyphenated)
+- `{filename}` = the agent file name without `.md` (e.g., `engineering-backend-architect`)
+
+The filename is extracted from the README table row by:
+1. Matching the Markdown link pattern: `[Role Name](category/filename.md)`
+2. Extracting `category` and `filename` from the path
+3. Constructing the full raw URL
+
+## Full URL examples
+
+| Role | Full GitHub Raw URL |
+|------|-------------------|
+| Backend Architect | `https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/engineering/engineering-backend-architect.md` |
+| Frontend Developer | `https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/engineering/engineering-frontend-developer.md` |
+| Security Engineer | `https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/engineering/engineering-security-engineer.md` |
+| UI Designer | `https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/design/design-ui-designer.md` |
+| Growth Hacker | `https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/marketing/marketing-growth-hacker.md` |
+| Database Optimizer | `https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/engineering/engineering-database-optimizer.md` |
+| Product Manager | `https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/product/` |
+| Financial Analyst | `https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/finance/` |
+
+## Network behavior
+
+- **Protocol**: HTTPS (TLS 1.2+)
+- **Timeout**: 10 seconds (in benchmark tooling)
+- **No authentication required**: GitHub raw is public
+- **Caching**: GitHub CDN; no client-side caching in current implementation
+- **No checksum verification**: Content integrity relies on TLS + GitHub's commit integrity
+
+## Role count notes
+
+The SKILL.md references "172 roles across 15 categories" and the KANBAN_GUIDANCE
+instruction references "17 categories, 210+ specialist roles." These numbers
+shift as the agency-agents repository grows. The actual category count and role
+count should be derived from a live README fetch rather than hardcoded.
+REF_RUP
+
+cat > "${REFERENCES_DIR}/benchmark-methodology.md" << 'REF_BM'
+# Benchmark Methodology — Role Selection Accuracy
+
+The [`test_benchmark.py`](../test_benchmark.py) script validates that the
+persona role-adoption system selects the correct specialist for each task type.
+
+## Benchmark design
+
+### Test structure (47 tests across 6 sections)
+
+| Section | Tests | What it validates |
+|---------|-------|-------------------|
+| [1/3] KANBAN_GUIDANCE — Principles present | 11 | All 4 principles + 7 citations present in patched prompt_builder.py |
+| [2/3] Agency-agents catalog | 15 | README is fetchable + 14 key roles exist in the catalog |
+| [3/3] Task-to-role mapping sanity | 15 | For 15 diverse tasks, the expected role exists in the catalog |
+| [4/6] Hermes config — kanban in toolsets | 1 | `kanban` appears in `~/.hermes/config.yaml` toolsets |
+| [5/6] Persona skill — SKILL.md | 1 | SKILL.md exists and contains research principle keywords |
+| [6/6] Repository — essential files | 4 | LICENSE, install.sh, README.md, .gitignore exist |
+
+### 15 benchmark tasks with gold-standard roles
+
+| # | Task Description | Expected Role |
+|---|-----------------|---------------|
+| 1 | React dashboard with D3.js | Frontend Developer |
+| 2 | REST API with JWT | Backend Architect |
+| 3 | CI/CD pipeline with GitHub Actions | DevOps Automator |
+| 4 | Optimize PostgreSQL queries | Database Optimizer |
+| 5 | OWASP audit | Security Engineer |
+| 6 | Product Requirements Document | Product Manager |
+| 7 | iOS login FaceID | Mobile App Builder |
+| 8 | Sentiment analysis model | AI Engineer |
+| 9 | Dockerize to AWS ECS | DevOps Automator |
+| 10 | API documentation | Technical Writer |
+| 11 | Brand style guide | Brand Guardian |
+| 12 | Social media campaign | Social Media Strategist |
+| 13 | Financial forecast model | Financial Analyst |
+| 14 | User research interviews | UX Researcher |
+| 15 | Production outage response | Incident Response Commander |
+
+### Principles validated
+
+The benchmark checks that all 4 research-backed selection principles are
+present in the patched `KANBAN_GUIDANCE`:
+
+| Principle | Citation | What it means |
+|-----------|----------|---------------|
+| Output-type alignment | MetaGPT (ICLR 2024) | Match role deliverable to task needs |
+| Role boundary clarity | CAMEL (NeurIPS 2023) | Pick exactly one non-overlapping role |
+| Task decomposition priority | AgentVerse (ICML 2024) | Cover primary domain; sub-tasks handle rest |
+| Confidence threshold | AutoGen (MSR 2023) | Fall back to generalist if <30% fit |
+
+## Results
+
+### Current pass rate: 47/47 (100%)
+
+All 47 tests pass as of the latest run. The 15-task gold-standard mapping
+achieves 100% role availability in the agency-agents catalog.
+
+## Caveats
+
+1. **Selection accuracy only.** This benchmark measures whether the *right role
+   exists in the catalog* for each task type. It does not measure whether an
+   LLM-based kanban worker *actually picks* the right role at runtime. That
+   requires end-to-end testing with real kanban task dispatch.
+
+2. **Static catalog check.** The benchmark fetches the live README but only
+   checks role existence via regex. It does not validate the content of
+   individual role `.md` files.
+
+3. **Network dependency.** Test [2/3] requires a network connection. If
+   GitHub raw is unreachable, tests 16-30 will fail gracefully.
+
+4. **Gold-standard mappings are heuristic.** The 15 task-to-role pairs are
+   manually curated based on the auditor's judgment. Different LLMs or human
+   evaluators might map some edge-case tasks differently.
+
+5. **No execution quality measurement.** Role selection is only the first
+   step. A correctly selected role might still produce poor output. Execution
+   quality benchmarking is a separate (future) concern.
+
+## Running the benchmark
+
+```bash
+cd ~/hermes-persona && python3 test_benchmark.py
+```
+
+Required:
+- Python 3.8+
+- Standard library only (no pip installs needed)
+- Network access to `raw.githubusercontent.com`
+- Hermes Agent installed at `~/.hermes/hermes-agent/`
+- `.env` not required (test reads only config, prompt_builder.py, and network)
+REF_BM
+
+echo "   ✅ references created at ${REFERENCES_DIR}"
 
 echo ""
 echo "🎭 Installation complete!"

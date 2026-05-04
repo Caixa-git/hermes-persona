@@ -38,8 +38,8 @@ def get_kb_guidance():
         return f.read()
 
 def fetch_readme():
-    """Fetch agency-agents README"""
-    url = "https://raw.githubusercontent.com/msitarzewski/agency-agents/main/README.md"
+    """Fetch agency-agents README (pinned to same commit as install.sh)"""
+    url = "https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/README.md"
     with urllib.request.urlopen(url, timeout=10) as resp:
         return resp.read().decode("utf-8")
 
