@@ -1,41 +1,34 @@
 ---
 name: persona
-description: "🎭 210+ expert roles — scan agency-agents catalog via GitHub raw, pick the best fit, load full .md specification"
+description: "🎭 Reference for the persona role adoption system — automatically activated for all kanban workers via KANBAN_GUIDANCE"
 ---
 
-# 🎭 persona — role adoption
+# 🎭 persona — role adoption (reference)
 
-Load this skill when you need to adopt a specialist role from the [agency-agents](https://github.com/msitarzewski/agency-agents) catalog (172 roles across 15 categories).
+This skill is **no longer required** via `--skill persona`.
 
-## How to adopt
+The persona role adoption system is now **built into KANBAN_GUIDANCE** — every kanban worker automatically:
 
-1. **Analyze your task.** Read with `kanban_show()`. Identify the domain, activity type (build/audit/research/manage), output, and scope.
+1. Reads the task with `kanban_show()`
+2. Fetches the agency-agents README from GitHub raw
+3. Picks the best-fitting role
+4. Announces adoption with `kanban_heartbeat(note="🎭 Role adopted: 🏗️ Backend Architect")`
+5. Loads the role's .md specification
+6. Acts as that specialist
 
-2. **Read the catalog.** Fetch the full README from GitHub raw:
-   ```
-   curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/main/README.md
-   ```
-   → 17 categories, 210+ specialist roles with use-case tables.
-   Each role has an emoji. Note it.
+If no matching role exists, the worker proceeds as a generalist.
 
-3. **Pick your role.** Choose the best-fitting specialist. Note its **emoji** from the table (e.g., 🏗️ for Backend Architect, 🎨 for Frontend Developer).
+## Why this works
 
-4. **Announce the adoption.** Immediately call:
-   ```
-   kanban_heartbeat(note="🎭 Role adopted: {emoji} {role-name}")
-   ```
-   Examples: `"🎭 Role adopted: 🏗️ Backend Architect"`, `"🎭 Role adopted: 🎨 Frontend Developer"`
-   This stamps your identity into the task timeline.
+The role adoption logic lives **directly in the Hermes Agent source** (`agent/prompt_builder.py`), inside `KANBAN_GUIDANCE`. Every spawned worker reads it.
 
-5. **Load the personality.** Fetch the role's full .md specification:
-   ```
-   curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{category}/{filename}.md
-   ```
+The agency-agents repository is accessed **on demand via GitHub raw URL** — no local clone needed.
 
-6. **Adopt it.** Follow its rules, standards, philosophy, and process faithfully. Embody the role completely for this task.
+## Reference URLs
 
-7. **Act.** Execute your task as that specialist.
+- Catalog: `https://raw.githubusercontent.com/msitarzewski/agency-agents/main/README.md`
+- Role .md: `https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{category}/{filename}.md`
 
----
+## Project repo
 
-🎭 *Pick your mask. Become the expert.*
+https://github.com/Caixa-git/hermes-persona
