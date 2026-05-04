@@ -142,8 +142,57 @@ for task_desc, expected_role in mappings:
         all_roles_ok = False
     test(f"Task '{task_desc[:30]}...' → {expected_role}", exists)
 
-# --- Summary ---
-print("\n" + "=" * 60)
+# --- Part 4: Kanban toolset in config ---
+print("📋 [4/6] Hermes config — kanban in toolsets")
+print("-" * 50)
+
+def check_kanban_in_config():
+    home = os.path.expanduser("~")
+    config_path = os.path.join(home, ".hermes", "config.yaml")
+    if not os.path.exists(config_path):
+        return False, f"Config file not found at {config_path}"
+    with open(config_path) as f:
+        content = f.read()
+    return "kanban" in content, f"kanban {'found' if 'kanban' in content else 'not found'} in toolsets"
+
+kanban_ok, kanban_detail = check_kanban_in_config()
+test("Kanban toolset in config.yaml", kanban_ok, kanban_detail)
+
+# --- Part 5: Persona skill file ---
+print("📋 [5/6] Persona skill — SKILL.md with research principles")
+print("-" * 50)
+
+def check_persona_skill():
+    home = os.path.expanduser("~")
+    skill_path = os.path.join(home, ".hermes", "skills", "persona", "SKILL.md")
+    if not os.path.exists(skill_path):
+        return False, f"SKILL.md not found at {skill_path}"
+    with open(skill_path) as f:
+        content = f.read().lower()
+    principles_keywords = ["research", "principle", "guideline", "framework"]
+    found = [kw for kw in principles_keywords if kw in content]
+    if len(found) >= 2:
+        return True, f"Research principles found (keywords: {', '.join(found)})"
+    else:
+        return False, f"Insufficient research principle keywords found: {found}"
+
+skill_ok, skill_detail = check_persona_skill()
+test("Persona SKILL.md exists and has research principles", skill_ok, skill_detail)
+
+# --- Part 6: Repository essential files ---
+print("📋 [6/6] Repository — essential files present")
+print("-" * 50)
+
+repo_path = "/Users/aiadmin/hermes-persona"
+required_files = ["LICENSE", "install.sh", "README.md", ".gitignore"]
+for fname in required_files:
+    fpath = os.path.join(repo_path, fname)
+    exists = os.path.exists(fpath)
+    test(f"Repo file: {fname}", exists, f"Path: {fpath}" if not exists else "")
+
+# --- Final summary ---
+print()
+print("=" * 60)
 total = PASS + FAIL
 print(f"📊 Result: {PASS}/{total} passed", end="")
 if total > 0:

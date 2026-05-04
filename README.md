@@ -20,7 +20,7 @@
   <a href="https://github.com/msitarzewski/agency-agents">
     <img src="https://img.shields.io/badge/roles_from-agency_agents_172_experts-FF6B6B?style=flat-square" alt="Agency Agents">
   </a>
-  <img src="https://img.shields.io/badge/tests-32_passing-22c55e?style=flat-square" alt="32 tests">
+  <img src="https://img.shields.io/badge/tests-51_passing-22c55e?style=flat-square" alt="51 tests">
   <img src="https://img.shields.io/badge/setup-one_command-grey?style=flat-square" alt="setup">
 </p>
 
