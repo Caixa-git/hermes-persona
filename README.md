@@ -39,32 +39,85 @@ Each specialist comes with its own rules, workflows, and quality standards. The 
 
 ---
 
-## What it looks like
+## Usage — everyday workflow
+
+### 🖐️ The one-line way
+
+Create a kanban task with a natural-language description. Assign it to `persona-worker`. Dispatch. The system does the rest.
 
 ```bash
-# Start a chat session
+# 1. Create a task (just say what needs to be done)
+hermes kanban create 'Add JWT auth to the payment API'
+
+# 2. Assign to the persona profile
+hermes kanban assign t_xxxx persona-worker
+
+# 3. Dispatch — worker autonomously:
+#    a. Fetches 172 expert roles from agency-agents
+#    b. Applies 4 research principles (output-type, boundaries, priority, confidence)
+#    c. Adopts the best-fitting role: 🏗️ Backend Architect
+#    d. Works on the task as that expert
+hermes kanban dispatch
+```
+
+That's it. A single `create → assign → dispatch` cycle. The worker announces its adopted role via heartbeat:
+
+```
+[17:34] heartbeat 🎭 Role adopted: 🏗️ Backend Architect
+```
+
+### 🧠 During a chat session
+
+You can also work entirely through `hermes chat` — just describe what you want naturally:
+
+```bash
 hermes chat
-
-# Then just say what you want naturally:
-# 👤 "Build an e-commerce platform with payment integration"
-#
-# The system automatically:
-#   1. Creates a planner task
-#   2. Planner adopts 🏛️ Software Architect role
-#   3. Planner decomposes the work into sub-tasks
-#   4. Each sub-task gets its own expert
-
-# To check progress from another terminal:
-hermes kanban list
 ```
 
 ```
+👤 "Build an e-commerce platform with payment integration"
+```
+
+The system automatically:
+1. Creates a planner task → planner adopts 🏛️ Software Architect
+2. Planner decomposes the work into sub-tasks
+3. Each sub-task gets its own expert role
+
+```                      
 ▶ t_...  ready   🏛️ Software Architect      E-commerce platform
 ▶ t_...  ready   🎨 Frontend Developer       Storefront UI
 ▶ t_...  ready   🏗️ Backend Architect        Payment API + JWT auth
 ▶ t_...  ready   🗄️ Database Optimizer       Product catalog schema
 ▶ t_...  ready   🚀 DevOps Automator         AWS deployment
 ```
+
+### 🎯 Working from a spec or audit report
+
+Point the persona system at an existing document:
+
+```bash
+hermes kanban create '[M1] install.sh — Add SHA256 checksum verification' \
+  --body 'Fix M1 from SECURITY_AUDIT.md: add SHA256 ...'
+hermes kanban assign t_xxxx persona-worker
+hermes kanban dispatch
+```
+
+The worker reads the task, fetches the security report, picks 🔒 Security Engineer, and fixes the vulnerability autonomously.
+
+### 🧩 Persona propagates to sub-tasks
+
+When a persona worker decomposes its task into sub-tasks, **every sub-task also adopts its own specialist role**. The persona system propagates through the kanban chain automatically.
+
+Example — one task decomposes into 3 specialists:
+
+```
+Parent: "E-commerce platform" → 🎭 Agents Orchestrator
+  ├── "Frontend: React storefront"  → 🎨 Frontend Developer
+  ├── "Backend: Payment API"        → 🏗️ Backend Architect
+  └── "DevOps: CI/CD pipeline"     → ⚙️ DevOps Automator
+```
+
+This works because the `kanban_create()` tool supports a `skills` parameter — the parent worker passes `skills=["persona"]` when creating child tasks, and each child worker independently fetches the agency-agents catalog to adopt the best-fitting role for its specific sub-task.
 
 No flags. No `--skill persona`. Every worker picks its own role automatically.
 
@@ -164,16 +217,46 @@ In one case — production outage response — the system chose 🚨 Incident Re
 
 ## Installation
 
-Hermes Agent must be installed first. Then run:
+Hermes Agent must be installed first.
+
+### ⚠️  Security — review before running
+
+Always review scripts before execution, especially from the internet. The installer
+modifies Hermes Agent source and symlinks credential files.
+
+### Recommended: two-step with SHA256 verification
+
+```bash
+curl -sSLO https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh
+curl -sSLO https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh.sha256
+sha256sum -c install.sh.sha256 && bash install.sh
+```
+
+### Quick install (one-liner)
 
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh)
 ```
 
 The installer:
-- Adds the `kanban` toolset to your config (so chat can create tasks)
-- Patches KANBAN_GUIDANCE with the persona role adoption section
+- Adds the `kanban` toolset to your config (chat can create/dispatch tasks)
+- Patches KANBAN_GUIDANCE with the persona role-adoption section
 - Places a reference skill at `~/.hermes/skills/persona/`
+- **Prompts per-profile** for `.env` symlink (opt-in, not automatic)
+
+### Credential scoping
+
+The installer prompts before symlinking `~/.hermes/.env` into each profile directory.
+Only symlink profiles that genuinely need those API keys.
+
+**Best practice**: create per-profile `.env` files with scoped credentials instead
+of symlinking one `.env` that grants every profile full access to all API keys.
+
+### Pinned upstream
+
+Agency-agents role definitions are pinned to commit
+[`783f6a7`](https://github.com/msitarzewski/agency-agents/commit/783f6a72bfd7f3135700ac273c619d92821b419a)
+— role specs are fetched from this exact snapshot, not the `main` branch.
 
 ---
 
