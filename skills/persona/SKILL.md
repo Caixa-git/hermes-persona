@@ -187,9 +187,15 @@ See `references/` in this skill directory for:
 - `kanban-guidance-patch.md` — exact patch text added to KANBAN_GUIDANCE (legacy, pre-opt-in design)
 - `role-url-patterns.md` — GitHub raw URL construction for all 15 categories
 - `benchmark-methodology.md` — 15-task benchmark design, results (15/15 correct), and caveats
-- `security-audit-methodology.md` — Step-by-step audit workflow using 🔒 Security Engineer persona
-- `kanban-dispatch-setup.md` — Profile creation, config setup, dispatcher configuration
 - `chain-propagation-test.md` — Verified test: persona propagates from parent to child tasks
+- `docker-smoke-test.md` — Clean Docker environment smoke test with 3-scenario verification
+- `dispatcher-worker-architecture.md` — Model hierarchy: Dispatcher(Pro) → Worker(Flash)
+- `external-system-integration-review.md` — Methodology for evaluating external project integration
+- `kanban-dispatch-setup.md` — Profile creation, config setup, dispatcher configuration
+- `korean-usage-patterns.md` — Korean language activation patterns (발동/이용/사용) with examples
+- `matching-improvement-research.md` — Research notes on improving role matching accuracy
+- `multi-agent-cross-validation.md` — Parallel N workers with consensus/disagreement tracking
+- `security-audit-methodology.md` — Step-by-step security audit workflow using 🔒 Security Engineer persona
 
 ## Design decisions
 
