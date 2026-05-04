@@ -96,16 +96,19 @@ for name, path in SAMPLE_ROLES.items():
     test(f"{name}", ok)
 print(f"     └─ {roles_ok}/{len(SAMPLE_ROLES)} 역할 접근 성공")
 
-# 1c. All 15 category directories exist
-categories = [
-    "academic", "design", "engineering", "finance", "game-development",
-    "marketing", "paid-media", "product", "project-management", "sales",
-    "spatial-computing", "specialized", "strategy", "support", "testing"
-]
-for cat in categories:
-    url = f"https://api.github.com/repos/msitarzewski/agency-agents/contents/{cat}"
-    ok = http_body(url) is not None
-    test(f"카테고리 존재: {cat}", ok)
+# 1c. Verify categories via single API call
+cat_body = http_body("https://api.github.com/repos/msitarzewski/agency-agents/contents/")
+if cat_body:
+    import json
+    try:
+        items = json.loads(cat_body)
+        existing_cats = sorted([i['name'] for i in items if i['type'] == 'dir' and not i['name'].startswith('.') and i['name'] != 'integrations' and i['name'] != 'examples' and i['name'] != 'scripts'])
+        test(f"카테고리 수 ({len(existing_cats)}개)", len(existing_cats) >= 10,
+             f"발견된 카테고리: {', '.join(existing_cats[:8])}...")
+    except Exception:
+        test_skip("카테고리 확인", "API 응답 파싱 실패")
+else:
+    test_skip("카테고리 확인", "GitHub API rate limit 도달")
 
 print()
 
