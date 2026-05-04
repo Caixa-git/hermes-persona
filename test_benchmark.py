@@ -31,10 +31,10 @@ def test(name, condition, detail=""):
         print(marker)
 
 def get_kb_guidance():
-    """Read KANBAN_GUIDANCE from prompt_builder.py"""
+    """Read research principles from persona SKILL.md (source of truth since opt-in transition)"""
     home = os.path.expanduser("~")
-    pb_path = os.path.join(home, ".hermes", "hermes-agent", "agent", "prompt_builder.py")
-    with open(pb_path) as f:
+    skill_path = os.path.join(home, ".hermes", "skills", "persona", "SKILL.md")
+    with open(skill_path) as f:
         return f.read()
 
 def fetch_readme():
@@ -54,8 +54,8 @@ print("=" * 60)
 print("🎭 Hermes Persona — Role Selection Benchmark")
 print("=" * 60)
 
-# --- Part 1: KANBAN_GUIDANCE integrity ---
-print("\n📋 [1/3] KANBAN_GUIDANCE — Principles present")
+# --- Part 1: Persona SKILL.md integrity ---
+print("\n📋 [1/3] Persona SKILL.md — Research principles present")
 print("-" * 50)
 
 guidance = get_kb_guidance()
