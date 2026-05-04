@@ -1,171 +1,104 @@
 <p align="center">
+  <img src="https://img.shields.io/badge/작업에_맞는_전문가를_자동으로-배정합니다-8A2BE2?style=flat-square" alt="subtitle">
+</p>
+
+<p align="center">
   <samp>
-    <strong><big>🎭 Hermes Persona</big></strong><br>
-    <sub>칸반 워커가 작업을 분석하고 210개 전문가 역할 중 최적을 자동 선택합니다</sub>
+    <big><strong>🎭 Hermes Persona</strong></big><br>
+    <br>
+    <sub>
+      칸반에 할당된 모든 작업에<br>
+      가장 적합한 전문가 페르소나를 자동 선택합니다
+    </sub>
   </samp>
 </p>
 
 <p align="center">
   <a href="https://github.com/NousResearch/hermes-agent">
-    <img src="https://img.shields.io/badge/Hermes_Agent-Compatible-8A2BE2?style=flat-square&logo=robot&logoColor=white" alt="Hermes Agent">
+    <img src="https://img.shields.io/badge/runs_on-Hermes_Agent-8A2BE2?style=flat-square&logo=robot" alt="Hermes Agent">
   </a>
   <a href="https://github.com/msitarzewski/agency-agents">
-    <img src="https://img.shields.io/badge/agency--agents-172_roles-FF6B6B?style=flat-square" alt="Agency Agents">
+    <img src="https://img.shields.io/badge/uses-agency_agents-FF6B6B?style=flat-square" alt="Agency Agents">
   </a>
-  <a href="https://github.com/Caixa-git/hermes-persona/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-brightgreen?style=flat-square" alt="MIT">
-  </a>
-  <img src="https://img.shields.io/badge/✅_47_tests-passing-22c55e?style=flat-square" alt="47 tests passing">
+  <img src="https://img.shields.io/badge/172_전문가_역할-FFD700?style=flat-square" alt="172 experts">
+  <img src="https://img.shields.io/badge/설치_1초-grey?style=flat-square" alt="install">
 </p>
+
+<br>
 
 ---
 
-## 설치
+안녕하세요. **Hermes Persona**입니다.
 
-Hermes Agent가 설치된 환경에서 아래 명령어 2개면 끝납니다.
+Hermes Agent가 작업을 처리할 때, 그 작업에 가장 어울리는 전문가의 성격과 업무 방식을 자동으로 적용해주는 시스템입니다.
+
+172명의 전문가 중에서 작업 내용을 분석해 가장 적합한 한 명을 골라, 그 전문가처럼 일하게 됩니다.
+
+<br>
+
+## 📖 이런 겁니다
+
+Hermes Agent에 작업을 요청하면, 이 시스템이 다음과 같이 반응합니다.
+
+| 작업 내용 | 선택되는 전문가 |
+|----------|---------------|
+| 온라인 쇼핑몰 제작 | 🏗️ 건축가 (Backend Architect) |
+| 대시보드 화면 디자인 | 🎨 디자이너 (Frontend Developer) |
+| 서버 보안 점검 | 🔒 보안 전문가 (Security Engineer) |
+| 앱 출시 준비 | 🚀 운영 전문가 (DevOps Automator) |
+| 데이터베이스 속도 개선 | 🗄️ 데이터 최적화 전문가 (Database Optimizer) |
+| 모바일 앱 개발 | 📱 앱 개발자 (Mobile App Builder) |
+
+전문가 한 명 한 명은 각자의 작업 방식, 원칙, 체크리스트를 가지고 있습니다. 작업을 할당받으면 그 전문가의 방식으로 일합니다.
+
+<br>
+
+## 🔄 어떻게 작동하나요
+
+작업이 할당되면 아래 과정이 자동으로 실행됩니다.
+
+```
+작업 할당 → 작업 내용 분석 → 172명의 전문가 검토
+    → 가장 적합한 전문가 선정
+    → 그 전문가의 방식으로 작업 시작
+    → "지금부터 🏗️ 건축가로서 작업합니다" 기록
+```
+
+모든 전문가 정보는 원격지에서 실시간으로 불러옵니다. 내 컴퓨터에 따로 저장하거나 관리할 것이 없습니다.
+
+<br>
+
+## 📦 설치 방법
+
+Hermes Agent가 설치된 컴퓨터에서 아래 한 줄을 복사해 터미널에 붙여넣고 Enter를 누르면 됩니다.
 
 ```bash
-# 1. kanban toolset 활성화
-hermes config set toolsets hermes-cli,kanban
-
-# 2. persona 시스템 설치
 bash <(curl -sSL https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh)
 ```
 
-설치가 완료되면 KANBAN_GUIDANCE에 persona 섹션이 추가됩니다. 이후부터 모든 칸반 워커가 자동으로 역할 분석을 수행합니다.
+설치가 끝나면 별도 설정 없이 바로 사용할 수 있습니다.
 
-> 이미 `~/.hermes/config.yaml`에 `toolsets: [hermes-cli, kanban]`가 있다면 1번은 건너뛰어도 됩니다.
+> **Hermes Agent 설치**가 아직이라면<br>
+> ➡ https://github.com/NousResearch/hermes-agent
 
----
+<br>
 
-## 사용법
+## 🗺️ 앞으로의 계획
 
-특별한 플래그가 필요하지 않습니다. 평소처럼 칸반 태스크를 생성하기만 하면 됩니다.
+- [x] 기본 전문가 자동 선택 — 172개 역할, 조건 없음, 설치 즉시 작동
+- [x] 이모지 표시 — 선택된 전문가를 칸반에서 바로 확인 가능
+- [ ] **똑똑한 역할 선택** — 여러 기준을 종합해 더 정확하게 전문가를 골라냅니다
 
-```bash
-hermes kanban create "REST API 서버를 JWT 인증과 함께 구축"
-```
+<br>
 
-워커가 아래 과정을 자동으로 처리합니다.
+## 🙏 만든 사람들
 
-<p align="center">
-  <img src="docs/kanban-screenshot.svg" alt="Kanban tasks with adopted roles" width="90%">
-</p>
-
-| 태스크 | 워커가 선택한 역할 |
-|--------|-----------------|
-| React 대시보드 UI 개발 | 🎨 Frontend Developer |
-| AWS CI/CD 파이프라인 구축 | 🚀 DevOps Automator |
-| PostgreSQL 쿼리 성능 최적화 | 🗄️ Database Optimizer |
-| REST API + JWT 인증 | 🏗️ Backend Architect |
-| API 엔드포인트 취약점 진단 | 🔒 Security Engineer |
-
----
-
-## 동작 방식
-
-```
-워커 생성
-  → KANBAN_GUIDANCE 로드 (persona 섹션 내장)
-  → 태스크 분석 (kanban_show)
-  → GitHub raw ← README 조회
-  → 210개 역할 중 최적 매칭
-  → kanban_heartbeat("🎭 Role adopted: 🏗️ Backend Architect")
-  → 역할 .md 로드
-  → 전문가 모드 ON
-```
-
-모든 과정은 GitHub raw URL 기반이라 로컬 저장소가 전혀 필요 없습니다.
-
-**일반 채팅에서 시작하려면** `toolsets`에 `kanban`이 추가된 상태라면 아래처럼 직접 요청해도 됩니다.
-
-```
-사용자: "전자상거래 플랫폼 만들어줘"
-  → Hermes: kanban_create(...)
-  → Planner: 태스크 분해 → kanban_create × N
-  → 각 워커: persona → 역할 채택 → 병렬 실행
-```
-
----
-
-## Hermes Agent 변경 사항
-
-Hermes Persona가 Hermes Agent에 가하는 변경은 아래 2가지입니다.
-
-### 1. KANBAN_GUIDANCE (prompt_builder.py)
-
-`## persona — role adoption` 섹션 13줄이 추가됩니다. persona 스킬을 로드하지 않은 워커는 평소와 동일하게 동작합니다.
-
-<details>
-<summary>추가된 코드 보기</summary>
-
-```python
-"## persona — role adoption\n"
-"\n"
-"1. **Analyze your task.** `kanban_show()` then analyze the task body.\n"
-"2. **Pick a role.** Fetch the README from the agency-agents repository:\n"
-"   `curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/main/README.md`\n"
-"   → scan 17 categories, 210+ specialist roles, pick the best fit.\n"
-"   Note the role's **emoji** from the README table.\n"
-"3. **Announce adoption.** Call `kanban_heartbeat(note=...` with:\n"
-"   `🎭 Role adopted: {emoji} {role-name}`\n"
-"4. **Load the personality.** Fetch the role's full specification:\n"
-"   `curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{category}/{filename}.md`\n"
-"5. **Adopt it.** Become that expert. Follow its rules, standards, and process.\n"
-"6. **Act.** Work on your task as that role.\n"
-"If no matching role exists, proceed as a generalist."
-```
-
-</details>
-
-### 2. config.yaml
-
-`toolsets`에 `kanban`이 추가되어야 채팅 모드에서 칸반 툴을 사용할 수 있습니다.
-
-```yaml
-toolsets:
-- hermes-cli
-- kanban
-```
-
-> `hermes config set toolsets hermes-cli,kanban` 명령어로 간단히 설정할 수 있습니다.
-
----
-
-## 프로젝트 구조
-
-```
-hermes-persona/
-├── README.md              # 설명서
-├── install.sh             # 설치 스크립트 (1-커맨드)
-├── test_persona.py        # 자동화 테스트 (32개)
-├── .gitignore
-├── docs/
-│   ├── kanban-screenshot.svg  # 칸반 리스트 예시 이미지
-│   └── persona-v2-plan.md     # v2 설계 문서 (다차원 매칭)
-└── skills/
-    └── persona/
-        └── SKILL.md           # persona 스킬 참조
-```
-
----
-
-## 로드맵
-
-- [x] KANBAN_GUIDANCE 내장 — `--skill persona` 불필요, 모든 워커 자동 적용
-- [x] 이모지 역할 표시 — 칸반 이벤트에 `🎭 Role adopted: 🏗️ Role Name` 기록
-- [ ] **지능형 역할 선택** — RIASEC + JCM 기반 다차원 벡터 매칭
-- [ ] 멀티 역할 분해 — 단일 태스크 → 복수 전문가 sub-task 자동 생성
-- [ ] 성과 피드백 — 역할 선택 이력 기반 추천 개선
-
----
-
-## 크레딧
-
-| 프로젝트 | 제작자 | 설명 |
+| 프로젝트 | 만든 이 | 설명 |
 |----------|--------|------|
-| [agency-agents](https://github.com/msitarzewski/agency-agents) | [msitarzewski](https://github.com/msitarzewski) | 15개 분야 172개 전문가 역할 카탈로그 |
-| [Hermes Agent](https://github.com/NousResearch/hermes-agent) | [Nous Research](https://nousresearch.com) | 칸반 기반 멀티에이전트 오케스트레이션 |
+| [agency-agents](https://github.com/msitarzewski/agency-agents) | msitarzewski | 15개 분야 172명의 AI 전문가 역할을 정리한 카탈로그 |
+| [Hermes Agent](https://github.com/NousResearch/hermes-agent) | Nous Research | AI 에이전트가 작업을 자동으로 처리하는 시스템 |
+
+<br>
 
 ---
 
