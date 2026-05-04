@@ -15,3 +15,13 @@ build/
 .hermes/
 kanban.db
 *.log
+
+# Environment & secrets
+.env
+
+# IDE / editor
+.vscode/
+.idea/
+*.bak
+*~
+*.egg
