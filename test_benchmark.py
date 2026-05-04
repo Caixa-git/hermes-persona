@@ -183,7 +183,7 @@ test("Persona SKILL.md exists and has research principles", skill_ok, skill_deta
 print("📋 [6/6] Repository — essential files present")
 print("-" * 50)
 
-repo_path = "/Users/aiadmin/hermes-persona"
+repo_path = os.path.dirname(os.path.abspath(__file__))
 required_files = ["LICENSE", "install.sh", "README.md", ".gitignore"]
 for fname in required_files:
     fpath = os.path.join(repo_path, fname)
