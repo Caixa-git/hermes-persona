@@ -1,0 +1,381 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.4.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "serialNumber": "urn:uuid:0b703b55-abaa-4b0c-5385-60b56901ec88",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-05-04T09:55:07.546097+00:00",
+    "tools": [
+      {
+        "vendor": "hermes-persona",
+        "name": "generate-sbom.py",
+        "version": "1.0.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "bom-ref": "hermes-persona",
+      "name": "hermes-persona",
+      "version": "1.0.0",
+      "description": "Persona skill for Hermes Agent \u2014 automatic specialist role adoption for kanban workers. Zero-configuration, zero-dependency installer that patches KANBAN_GUIDANCE in prompt_builder.py.",
+      "purl": "pkg:github/Caixa-git/hermes-persona@main",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/Caixa-git/hermes-persona",
+          "comment": "Public repository"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:.gitignore",
+      "name": ".gitignore",
+      "description": "Repository file: .gitignore",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "647373b4c11c50582fedbec32f3a9c55bf9f101f3148c14caa192c70b3fcf56a"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": ".gitignore"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "232"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:LICENSE",
+      "name": "LICENSE",
+      "description": "Repository file: LICENSE",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "7e5eea9921cdd3ab6db50874fd0a0a09ecf003de643450278043f4302df5dd46"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": "LICENSE"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "1066"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:README.md",
+      "name": "README.md",
+      "description": "Repository file: README.md",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c4526162dbd7e520704fe8c0be3f74cd4ef553d45b52c2b4169bc62c22459111"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": "README.md"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "14495"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:SECURITY_AUDIT.md",
+      "name": "SECURITY_AUDIT.md",
+      "description": "Repository file: SECURITY_AUDIT.md",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "05546f1b37ed94c407253ebf111778990d8bad094b7fbb4de8711f1bd3bb5d38"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": "SECURITY_AUDIT.md"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "20931"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:install.sh",
+      "name": "install.sh",
+      "description": "Repository file: install.sh",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "4e0877e9f5a5643229e5eaf32078fe7d587082a1c492ff0b91c9b9ec9bf778f0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": "install.sh"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "40438"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:test_benchmark.py",
+      "name": "test_benchmark.py",
+      "description": "Repository file: test_benchmark.py",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8ac2eca14c3c28d388c07428ce6c2bd62a316aed402e6a452ab09d8d0ef6a454"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": "test_benchmark.py"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "6662"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:scripts/generate-role-manifest.py",
+      "name": "scripts/generate-role-manifest.py",
+      "description": "Repository file: scripts/generate-role-manifest.py",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "52d9d406759f1726a5d7b29a3e8aa82c581d04b8d92b7f81db8ef4a273a75970"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": "scripts/generate-role-manifest.py"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "5624"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:scripts/generate-sbom.py",
+      "name": "scripts/generate-sbom.py",
+      "description": "Repository file: scripts/generate-sbom.py",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "0b33fdb31ecb3955acb00551c4b278dd84dfa7b1d66d2d3e47dc18d40b0338cf"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": "scripts/generate-sbom.py"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "7564"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:scripts/scan-role-content.py",
+      "name": "scripts/scan-role-content.py",
+      "description": "Repository file: scripts/scan-role-content.py",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "eabfd1618cbd99159e20acf3a4ba308dfd1ff5d5b5d59ca46e9375ea2224c8b0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": "scripts/scan-role-content.py"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "15833"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:.github/workflows/sbom.yml",
+      "name": ".github/workflows/sbom.yml",
+      "description": "Repository file: .github/workflows/sbom.yml",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "4f592daa79ac599a7c60f9c6a05ae04699eb7f1ea940103ddb6c968378ee8073"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": ".github/workflows/sbom.yml"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "1258"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:skills/persona/SKILL.md",
+      "name": "skills/persona/SKILL.md",
+      "description": "Repository file: skills/persona/SKILL.md",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a878d9f14fc924008228ed6640d2117c60908a912b31c204d81b5a323ac0eec8"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": "skills/persona/SKILL.md"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "9231"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:skills/persona/references/benchmark-methodology.md",
+      "name": "skills/persona/references/benchmark-methodology.md",
+      "description": "Repository file: skills/persona/references/benchmark-methodology.md",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1d44f82f099055317c4477610fa22775b094aea5ba62fa339a4fcd4b1be574bd"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": "skills/persona/references/benchmark-methodology.md"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "4056"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:skills/persona/references/kanban-guidance-patch.md",
+      "name": "skills/persona/references/kanban-guidance-patch.md",
+      "description": "Repository file: skills/persona/references/kanban-guidance-patch.md",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "edb644d28ec16e9da187c5a8a071851be3195bb455f52710f41110421c8f72c2"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": "skills/persona/references/kanban-guidance-patch.md"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "3473"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "hermes-persona:skills/persona/references/role-url-patterns.md",
+      "name": "skills/persona/references/role-url-patterns.md",
+      "description": "Repository file: skills/persona/references/role-url-patterns.md",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "eca134c572b408d2caa98576ea07a3a85be594f1c67dc46b0addfdadfbd2190f"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:file:path",
+          "value": "skills/persona/references/role-url-patterns.md"
+        },
+        {
+          "name": "cdx:file:size",
+          "value": "3610"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "external:agency-agents",
+      "name": "agency-agents",
+      "version": "783f6a72bfd7f3135700ac273c619d92821b419a",
+      "purl": "pkg:github/msitarzewski/agency-agents@783f6a72bfd7f3135700ac273c619d92821b419a",
+      "description": "172 specialist role definitions across 15 domains \u2014 runtime dependency for persona role adoption",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/msitarzewski/agency-agents",
+          "comment": "Upstream repository"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "external:hermes-agent",
+      "name": "hermes-agent",
+      "version": "latest",
+      "purl": "pkg:github/NousResearch/hermes-agent@latest",
+      "description": "Kanban-based multi-agent orchestration framework \u2014 install-time dependency",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/NousResearch/hermes-agent",
+          "comment": "Upstream repository"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "hermes-persona",
+      "dependsOn": [
+        "external:agency-agents",
+        "external:hermes-agent"
+      ]
+    }
+  ]
+}

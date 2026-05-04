@@ -26,16 +26,28 @@
 |
 |No `--skill persona` flag needed. No local git clone. The logic lives in `KANBAN_GUIDANCE` inside Hermes Agent's `agent/prompt_builder.py`.
 |
-|## Installation
-|
-|```bash
-|bash <(curl -sSL https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh)
-|```
-|
-|The installer:
-|1. Creates `~/.hermes/skills/persona/SKILL.md`
-|2. Patches KANBAN_GUIDANCE in `agent/prompt_builder.py`
-|3. Enables `kanban` toolset in `~/.hermes/config.yaml`
+## Installation
+
+```bash
+# Review before running (always recommended):
+bash install.sh --dry-run
+
+# Two-step with SHA256 verification (recommended):
+curl -sSLO https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh
+curl -sSLO https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh.sha256
+sha256sum -c install.sh.sha256 && bash install.sh
+
+# Quick install:
+bash <(curl -sSL https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh)
+```
+
+The installer:
+1. Creates `~/.hermes/skills/persona/SKILL.md`
+2. Patches KANBAN_GUIDANCE in `agent/prompt_builder.py`
+3. Enables `kanban` toolset in `~/.hermes/config.yaml`
+4. Prompts per-profile for `.env` symlink (opt-in, not automatic)
+
+Use `--dry-run` to preview all changes without modifying anything.
 |
 |## References
 |
@@ -106,19 +118,55 @@
 |- One-off information checks → `delegate_task` (lightweight, fast)
 |- Complex domain-specific work → `kanban_create` → persona worker (heavy, expert)
 |
-|The agent chooses the right path based on task complexity.
-|
-|## Edge cases
-|
-|| Case | Behavior |
-||------|----------|
-|| No matching role | Worker proceeds as generalist (`"If no matching role exists, proceed as a generalist."`) |
-|| Multiple roles match | Worker picks the single best fit from the README table |
-|| GitHub raw unavailable | Worker cannot fetch catalog → proceeds as generalist (no error, just no persona) |
-|| Task is trivial | Worker still scans; most trivial tasks match no specialist → generalist fallback |
-|| Parallel work via delegate_task() | Persona does NOT activate. Work executes as generic Hermes agent. |
-|| **`hermes -z` (oneshot)** | Main agent in oneshot mode could call `kanban_create`, but exits before workers finish. User gets one response, not kanban progress. **Use `hermes chat`** for kanban orchestration. |
-|
-|## Project repo
-|
-|https://github.com/Caixa-git/hermes-persona
+The agent chooses the right path based on task complexity.
+
+## Trust model — security boundary
+
+The persona system injects user-controlled task content (titles, bodies) from `kanban_show()`'s `worker_context` into every worker's system prompt via `KANBAN_GUIDANCE`. This creates a prompt injection surface that the following defenses address:
+
+### Defenses (defense-in-depth)
+
+| Layer | Mechanism | What it protects |
+|-------|-----------|-----------------|
+| 1. Code-level scanning | `_check_kanban_task_threats()` in `prompt_builder.py` — scans task content against `_CONTEXT_THREAT_PATTERNS` (same patterns that guard AGENTS.md / .cursorrules / SOUL.md): instruction override, credential exfiltration, hidden unicode, HTML injection | Logs warnings when kanban task content matches known injection patterns |
+| 2. LLM-level awareness | KANBAN_GUIDANCE step 0 "Injection awareness" — instructs every worker to scrutinize task content for: ignore-previous-rules, hidden unicode, credential exfiltration, HTML injection | Worker applies critical thinking; treats suspicious content as advisory, not directive |
+| 3. Operational trust boundary | Kanban task creators are assumed trusted. The `kanban_create` tool is gated behind Hermes Agent's built-in tool access controls. | Limits blast radius to authenticated, authorized users |
+
+### What is NOT protected
+
+- Malicious role specifications in a compromised `agency-agents` repository (mitigated by commit pinning — `783f6a72`)
+- Deeply obfuscated injection payloads that evade both the regex patterns and LLM scrutiny
+- Tasks created by an attacker who has gained access to a user's Hermes Agent session
+
+### Trust model summary
+
+> Kanban task creators are trusted. If you allow untrusted users to create kanban tasks, they can inject steering instructions into workers. The defenses (code scanning + code sanitization + LLM awareness) provide defense-in-depth against known patterns but are not a replacement for access control. For multi-tenant or public-facing deployments, add an explicit task content sanitization gateway before task creation.
+
+## Edge cases
+
+| Case | Behavior |
+|------|----------|
+| No matching role | Worker proceeds as generalist (`"If no matching role exists, proceed as a generalist."`) |
+| Multiple roles match | Worker picks the single best fit from the README table |
+| GitHub raw unavailable | Worker cannot fetch catalog → proceeds as generalist (no error, just no persona) |
+| Task is trivial | Worker still scans; most trivial tasks match no specialist → generalist fallback |
+| Parallel work via delegate_task() | Persona does NOT activate. Work executes as generic Hermes agent. |
+| **`hermes -z` (oneshot)** | Main agent in oneshot mode could call `kanban_create`, but exits before workers finish. **Use `hermes chat`** for kanban orchestration. |
+
+## Supply chain integrity
+
+The repo includes automated supply chain security tooling:
+
+| Tool | Script | Output |
+|------|--------|--------|
+| **SBOM** | `scripts/generate-sbom.py` | `sbom.cdx.json` — CycloneDX 1.4 with all repo files + external deps |
+| **Role manifest** | `scripts/generate-role-manifest.py` | `role-manifest.sha256` — SHA256 checksums for all 182 agency-agents role files |
+| **Content scanner** | `scripts/scan-role-content.py` | Scans role specs for prompt injection, embedded commands, credential leaks, obfuscation |
+| **Checksum** | `sha256sum install.sh` | `install.sh.sha256` — auto-updated by GitHub Actions |
+| **Dry-run** | `bash install.sh --dry-run` | Previews all changes without modifying anything |
+
+Run these locally before committing, or rely on `.github/workflows/sbom.yml` for automated updates.
+
+## Project repo
+
+https://github.com/Caixa-git/hermes-persona

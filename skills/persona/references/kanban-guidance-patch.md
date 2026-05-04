@@ -5,12 +5,20 @@ by the install.sh patcher. It adds a "persona — role adoption" section to the
 KANBAN_GUIDANCE tuple, enabling every kanban worker to auto-adopt specialist roles
 from the [agency-agents](https://github.com/msitarzewski/agency-agents) catalog.
 
-## Insertion point
+Additionally, the installer patches `hermes_cli/kanban_db.py` to add a task content
+sanitizer in `build_worker_context()`, neutralizing prompt injection patterns in
+kanban task titles and bodies before they reach the worker's system prompt.
 
-Inserted immediately before the closing `)` of the `KANBAN_GUIDANCE` tuple
-(currently the `)` that ends the "Do NOT" block).
+## Insertion points
 
-## Patch text
+1. **prompt_builder.py**: `_check_kanban_task_threats()` and `_sanitize_kanban_task_content()`
+   inserted before `_find_git_root()`. Persona section appended to KANBAN_GUIDANCE tuple.
+
+2. **kanban_db.py**: `_sanitize_kanban_task_text()` function + `_KANBAN_TASK_THREAT_PATTERNS`
+   added before `build_worker_context()`. Sanitization calls inserted after the `get_task()`
+   no-task guard to strip injection payloads from title and body.
+
+## Patch text — KANBAN_GUIDANCE persona section
 
 ```python
     "## persona — role adoption\\n"

@@ -104,6 +104,21 @@ hermes kanban dispatch
 
 The worker reads the task, fetches the security report, picks 🔒 Security Engineer, and fixes the vulnerability autonomously.
 
+### 🧩 Persona propagates to sub-tasks
+
+When a persona worker decomposes its task into sub-tasks, **every sub-task also adopts its own specialist role**. The persona system propagates through the kanban chain automatically.
+
+Example — one task decomposes into 3 specialists:
+
+```
+Parent: "E-commerce platform" → 🎭 Agents Orchestrator
+  ├── "Frontend: React storefront"  → 🎨 Frontend Developer
+  ├── "Backend: Payment API"        → 🏗️ Backend Architect
+  └── "DevOps: CI/CD pipeline"     → ⚙️ DevOps Automator
+```
+
+This works because the `kanban_create()` tool supports a `skills` parameter — the parent worker passes `skills=["persona"]` when creating child tasks, and each child worker independently fetches the agency-agents catalog to adopt the best-fitting role for its specific sub-task.
+
 No flags. No `--skill persona`. Every worker picks its own role automatically.
 
 | Your task | The worker adopts |
