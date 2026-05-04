@@ -42,16 +42,19 @@ Each specialist comes with its own rules, workflows, and quality standards. The 
 ## What it looks like
 
 ```bash
-# Tell Hermes what to do (kanban toolset must be enabled)
-hermes -z "Build an e-commerce platform with payment integration"
+# Start a chat session
+hermes chat
 
+# Then just say what you want naturally:
+# 👤 "Build an e-commerce platform with payment integration"
+#
 # The system automatically:
 #   1. Creates a planner task
 #   2. Planner adopts 🏛️ Software Architect role
 #   3. Planner decomposes the work into sub-tasks
 #   4. Each sub-task gets its own expert
 
-# Check what's happening:
+# To check progress from another terminal:
 hermes kanban list
 ```
 
@@ -92,6 +95,15 @@ Worker spawns
 ```
 
 No local repo, no cloning, no management overhead. All role data is fetched on demand.
+
+---
+
+## Caveats
+
+| Limitation | Detail |
+|------------|--------|
+| **`-z` / --oneshot** | Kanban orchestration requires a persistent session. `hermes -z` is one-shot and exits before workers finish. Use `hermes chat` and tell it what you want naturally. |
+| **`delegate_task()`** | Native Hermes sub-agents don't go through the kanban pipeline — persona only activates for kanban workers. |
 
 ---
 
