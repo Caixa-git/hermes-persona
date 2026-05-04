@@ -707,165 +707,6 @@ REF_BM
 
 echo "   ✅ references created at ${REFERENCES_DIR}"
 
-# ── Step 6: Create anima skill directory ──────────────────────────────
-echo ""
-echo "🧠 Installing Hermes Anima..."
-ANIMA_DIR="${HOME}/.hermes/skills/anima"
-ANIMA_SKILL="${ANIMA_DIR}/SKILL.md"
-ANIMA_PROFILES="${ANIMA_DIR}/profiles"
-
-maybe mkdir -p "$ANIMA_PROFILES"
-[ "$DRY_RUN" = true ] || mkdir -p "$ANIMA_PROFILES"
-
-# Step 7: Write anima SKILL.md
-if [ "$DRY_RUN" = true ]; then
-    echo "   [DRY-RUN] Would write file: ${ANIMA_SKILL} (SKILL.md content)"
-else
-    cat > "$ANIMA_SKILL" << 'ANIMA_SKILL_EOF'
----
-name: anima
-description: "🧠 Core nature adoption for Hermes Agent kanban workers — OCEAN-backed archetypes for every domain"
-tags:
-  - hermes-agent
-  - kanban
-  - nature-adoption
-  - anima
-  - personality
-related_skills:
-  - hermes-agent
-  - kanban-worker
-  - persona
----
-
-# 🧠 anima — core nature adoption for kanban workers
-
-## What it is
-
-A skill-based nature adoption system for Hermes Agent. When a worker is spawned with `--skill anima`, it adopts a research-backed core nature (anima) based on its work domain.
-
-**Anima is different from persona:**
-- **Persona** = the social role you play (Backend Architect, UX Designer...)
-- **Anima** = who you fundamentally ARE (System Thinker, Trust Builder...)
-
-Anima operates at a deeper level than persona. When they conflict, **anima prevails**.
-
-## Research Foundation
-
-Each anima profile is based on established I/O psychology research:
-
-| Study | Sample | Key Finding |
-|-------|--------|-------------|
-| Barrick & Mount (1991) | 117 studies, 23,994 participants | Conscientiousness predicts across ALL occupations (ρ=.22-.24) |
-| Nye et al. (2012) | RIASEC × Big Five | Holland codes map to OCEAN at r=.18-.33 |
-| Sackett et al. (2017) | Meta-analytic update | Profile matching yields ρ=.35-.45 |
-| Hogan Assessment (1996-2019) | 30+ years field data | Occupation-specific prediction validated |
-
-## Activation
-
-```bash
-hermes kanban create 'Build JWT auth API' --skill anima
-hermes kanban create 'Design dashboard' --skill persona --skill anima
-```
-
-## How it works
-
-1. Identifies work domain from persona role or task keywords
-2. Fetches the anima profile from GitHub raw
-3. Internalizes the identity statement as CORE NATURE
-4. Announces via `kanban_heartbeat(note="🧠 Anima: System Thinker")`
-5. When nature and role conflict, **nature prevails**
-
-## Available Anima Profiles (15 domains)
-
-| Domain | Archetype | Dominant Trait |
-|--------|-----------|:--------------:|
-| engineering | System Thinker | High C, High O |
-| design | Expressive Creator | Very High O |
-| sales | Trust Builder | High E, High C |
-| marketing | Creative Strategist | High O, High E |
-| product | Visionary Executor | High O, High C |
-| paid-media | Budget Optimizer | High C |
-| operations | Process Guardian | Very High C |
-| management | Visionary Executor | High E, High C |
-| research | Analytical Explorer | Very High O |
-| education | Knowledge Nurturer | High A, High E |
-| healthcare | Cautious Healer | High C, High A |
-| ai-ml | Probability Worshipper | Very High O |
-| gaming | Fun Engineer | Very High O |
-| legal | Rule Fundamentalist | High C |
-| specialized | Domain Master | Varies |
-
-## Priority: Anima > Persona
-
-```
-Your fundamental nature (anima) defines who you are.
-The role you adopt (persona) is a tool you use to accomplish tasks.
-When nature and role conflict, YOUR NATURE PREVAILS.
-```
-
-**Evidence:** Geng et al. (AAAI 2026, "Control Illusion", arXiv:2502.15851). Our replication on DeepSeek V4 Flash confirmed: without explicit framing, persona overrides anima 67% of the time even with layer separation.
-
-## Domain inference (without persona)
-
-| Domain | Keywords |
-|--------|----------|
-| engineering | code, build, API, database, frontend, backend |
-| design | UI, UX, layout, color, visual, typography |
-| sales | prospect, deal, pipeline, outreach, demo |
-| marketing | campaign, content, audience, growth, SEO |
-| product | feature, roadmap, backlog, prioritization |
-| paid-media | PPC, SEM, ad spend, ROAS, bid |
-| operations | process, workflow, CI/CD, deployment |
-| management | team, strategy, planning, OKR, leadership |
-| research | analyze, investigate, benchmark, evaluate |
-| education | tutorial, explain, teach, guide, onboarding |
-| healthcare | patient, safety, compliance, clinical |
-| ai-ml | model, training, inference, dataset |
-| gaming | game, player, mechanic, level, balance |
-| legal | compliance, contract, license, regulation |
-| specialized | (fallback) |
-ANIMA_SKILL_EOF
-    echo "   ✅ anima skill created at ${ANIMA_SKILL}"
-fi
-
-# Step 8: Write anima profiles (15 domain profiles as small markdown files)
-# Each profile is fetched from GitHub raw at runtime like agency-agents roles.
-# Local copies ensure workers without network can still load their anima.
-if [ "$DRY_RUN" = true ]; then
-    echo "   [DRY-RUN] Would write 15 anima profiles to ${ANIMA_PROFILES}/"
-else
-    for domain in engineering design sales marketing product paid-media operations management research education healthcare ai-ml gaming legal specialized; do
-        cat > "${ANIMA_PROFILES}/${domain}.md" << PROFILE_EOF
-# 🧠 Domain: ${domain}
-
-## Archetype
-
-(Loaded from GitHub raw at runtime)
-
-```bash
-curl -s https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/skills/anima/profiles/${domain}.md
-```
-
-Run the above command to get the full identity statement for this domain's anima.
-PROFILE_EOF
-    done
-    echo "   ✅ 15 anima profile stubs created at ${ANIMA_PROFILES}/"
-fi
-
-# Step 9: Patch KANBAN_GUIDANCE with anima section (if not already applied)
-PB_FILE="${HERMES_SOURCE}/agent/prompt_builder.py"
-if [ -f "$PB_FILE" ]; then
-    if grep -q "core nature adoption" "$PB_FILE" 2>/dev/null; then
-        echo "   ✅ anima section already in KANBAN_GUIDANCE"
-    else
-        echo "   ⏭️  Anima section not found. Apply with:"
-        echo "      python3 ~/hermes-persona/scripts/patch-kanban-guidance-anima.py"
-        echo "   Or manually patch prompt_builder.py (see KANBAN_GUIDANCE tuple tail)"
-    fi
-else
-    echo "   ⚠️  prompt_builder.py not found -- install Hermes Agent first"
-fi
-
 echo ""
 if [ "$DRY_RUN" = true ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -883,10 +724,6 @@ if [ "$DRY_RUN" = true ]; then
     echo "  Would write file:    ${PERSONA_DIR}/references/role-url-patterns.md"
     echo "  Would write file:    ${PERSONA_DIR}/references/benchmark-methodology.md"
     echo "  Would prompt:        .env symlink for each profile"
-    echo "  Would create dir:    ${ANIMA_DIR}/"
-    echo "  Would write file:    ${ANIMA_SKILL}"
-    echo "  Would create dir:    ${ANIMA_PROFILES}/"
-    echo "  Would write file:    15 anima profiles at ${ANIMA_PROFILES}/"
     echo ""
     echo "  No files were modified."
     echo "  Run without --dry-run to apply changes."
@@ -897,7 +734,6 @@ else
     echo ""
     echo "From now on, kanban workers assigned with --skill persona will"
     echo "pick the best-fitting expert role for their task."
-    echo "Workers with --skill anima will also adopt their core nature."
     echo ""
     echo "To verify:"
     echo "  python3 test_benchmark.py"
@@ -906,7 +742,4 @@ else
     echo "  hermes kanban create \"Design a REST API with JWT auth\" --skill persona"
     echo "  hermes kanban assign <task-id> <your-profile>"
     echo "  hermes kanban dispatch"
-    echo ""
-    echo "To see anima (with persona):"
-    echo "  hermes kanban create \"Design a dashboard\" --skill persona --skill anima"
 fi
