@@ -30,7 +30,7 @@ EXTERNAL_DEPS = [
     },
     {
         "name": "hermes-agent",
-        "version": "latest",
+        "version": "1.1.0",
         "purl": "pkg:github/NousResearch/hermes-agent@latest",
         "url": "https://github.com/NousResearch/hermes-agent",
         "description": "Kanban-based multi-agent orchestration framework — install-time dependency",
@@ -141,7 +141,7 @@ def build_sbom(files: list[dict]) -> dict:
         "$schema": "http://cyclonedx.org/schema/bom-1.4.schema.json",
         "bomFormat": "CycloneDX",
         "specVersion": "1.4",
-        "serialNumber": f"urn:uuid:{_uuid_v4()}",
+        "serialNumber": f"urn:uuid:{uuid.uuid4()}",
         "version": 1,
         "metadata": {
             "timestamp": now,
@@ -162,7 +162,7 @@ def build_sbom(files: list[dict]) -> dict:
                     "adoption for kanban workers. Zero-configuration, zero-dependency "
                     "installer that patches KANBAN_GUIDANCE in prompt_builder.py."
                 ),
-                "purl": "pkg:github/Caixa-git/hermes-persona@main",
+                "purl": "pkg:github/Caixa-git/hermes-persona@135c820",
                 "externalReferences": [
                     {
                         "type": "website",
