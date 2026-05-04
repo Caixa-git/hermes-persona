@@ -172,6 +172,45 @@ No local repo, no cloning, no management overhead. All role data is fetched on d
 
 Role selection is guided by four research-backed principles (see Research section below) — not simple keyword matching. Each kanban worker evaluates the task's output type, role boundaries, decomposition priority, and confidence before choosing.
 
+### Generalist fallback
+
+**When no specialist role matches, the worker proceeds as a generalist.** This is by design — principle #4 (Confidence threshold) from the four research-backed principles:
+
+> *"AutoGen (Wu et al., Microsoft Research, 2023) — If no role's fit exceeds ~30%, proceed as a generalist. Forcing a bad match harms output quality."*
+
+Not every task needs a specialist. Procedural, generic, or cross-domain tasks go to the generalist path — the worker still executes the work, just without adopting a specialist persona.
+
+#### Concrete examples
+
+| Task | Result | Reason |
+|------|--------|--------|
+| "Build REST API" | 🏗️ Backend Architect | Strong match (>30%) |
+| "Scan for vulnerabilities" | 🔒 Security Engineer | Strong match |
+| "Docker smoke test" | Generalist | No specialist role fits the task |
+| "Run test suite" | Generalist | Testing is generic, no domain expert needed |
+| "Write README docs" | 📚 Technical Writer | Strong match (>30%) |
+| "Clean install verification" | Generalist | Task is procedural, no domain specialty |
+
+#### How the confidence threshold works
+
+1. The worker fetches the agency-agents catalog — 172+ roles across 15 domains
+2. Each role is scored by relevance to the task (domain, output type, complexity, tech stack)
+3. The best-matching role is selected — but only if the confidence score exceeds ~30%
+4. If no role clears the threshold, the worker logs a heartbeat and proceeds as a generalist
+
+This prevents forcing an expert role that doesn't fit — which produces worse results than running un-specialized.
+
+#### Verifying the fallback
+
+You can confirm when a worker chose the generalist path by checking its heartbeat logs:
+
+```bash
+hermes kanban show <task-id> | grep heartbeat
+# → "No role exceeds 30% fit — proceeding as generalist"
+```
+
+If no role-adoption heartbeat appears at all, `--skill persona` was not loaded — the worker ran as a default generalist from the start.
+
 ---
 
 ## Research
