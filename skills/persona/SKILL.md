@@ -1,28 +1,26 @@
 ---
 name: persona
-description: "🎭 자동 페르소나 시스템 — 칸반 워커가 작업 분석 후 172개 전문가 역할 중 최적을 선택합니다"
+description: "🎭 Automatic persona system — kanban workers analyze tasks and pick the best of 172 expert roles"
 ---
 
-# 🎭 persona — 페르소나 역할 시스템
+# 🎭 persona — role adoption system
 
-Hermes Persona가 설치된 환경에서는 이 스킬을 별도로 로드할 필요가 없습니다.
+This skill does not need to be loaded manually. When Hermes Persona is installed, every kanban worker automatically:
 
-모든 칸반 워커는 KANBAN_GUIDANCE를 통해 자동으로:
+1. Analyzes its task
+2. Fetches the agency-agents catalog (GitHub raw)
+3. Picks the best-fitting role
+4. Announces via `kanban_heartbeat`
+5. Loads the role's .md specification
+6. Works as that specialist
 
-1. 작업 분석
-2. agency-agents README 조회 (GitHub raw)
-3. 최적 역할 선택
-4. kanban_heartbeat로 역할 기록
-5. 해당 역할의 .md 로드
-6. 전문가 모드로 작업
+If no matching role exists, the worker proceeds as a generalist.
 
-일치하는 역할이 없으면 일반 워커로 동작합니다.
+## Reference URLs
 
-## 참고 URL
+- Catalog: `https://raw.githubusercontent.com/msitarzewski/agency-agents/main/README.md`
+- Role file: `https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{category}/{filename}.md`
 
-- 카탈로그: `https://raw.githubusercontent.com/msitarzewski/agency-agents/main/README.md`
-- 역할 파일: `https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{category}/{filename}.md`
-
-## 프로젝트 저장소
+## Project repo
 
 https://github.com/Caixa-git/hermes-persona

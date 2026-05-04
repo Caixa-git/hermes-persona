@@ -11,7 +11,7 @@ set -euo pipefail
 PERSONA_DIR="${HOME}/.hermes/skills/persona"
 SKILL_FILE="${PERSONA_DIR}/SKILL.md"
 
-echo "🎭 Installing persona skill for Hermes Agent..."
+echo "🎭 Installing Hermes Persona..."
 
 # Step 0: Enable kanban toolset in config
 CONFIG="${HOME}/.hermes/config.yaml"
@@ -19,13 +19,12 @@ if [ -f "$CONFIG" ]; then
     if grep -q "kanban" "$CONFIG" 2>/dev/null; then
         echo "   ✅ kanban toolset already enabled"
     else
-        # Add kanban after hermes-cli in toolsets
         sed -i '' 's/^- hermes-cli$/- hermes-cli\n- kanban/' "$CONFIG" 2>/dev/null || \
         echo "   ⚠️  Could not auto-add kanban toolset. Run: hermes config set toolsets hermes-cli,kanban"
         echo "   ✅ kanban toolset enabled"
     fi
 else
-    echo "   ⚠️  config.yaml not found. Later run: hermes config set toolsets hermes-cli,kanban"
+    echo "   ⚠️  config.yaml not found. Run later: hermes config set toolsets hermes-cli,kanban"
 fi
 
 # Create persona skill directory
@@ -35,43 +34,30 @@ mkdir -p "$PERSONA_DIR"
 cat > "$SKILL_FILE" << 'SKILL'
 ---
 name: persona
-description: "🎭 210+ expert roles — scan agency-agents catalog via GitHub raw, pick the best fit, load full .md specification"
+description: "🎭 Automatic persona system — kanban workers analyze tasks and pick the best of 172 expert roles"
 ---
 
-# 🎭 persona — role adoption
+# 🎭 persona — role adoption system
 
-Load this skill when you need to adopt a specialist role from the [agency-agents](https://github.com/msitarzewski/agency-agents) catalog (172 roles across 15 categories).
+This skill does not need to be loaded manually. When Hermes Persona is installed, every kanban worker automatically:
 
-## How to adopt
+1. Analyzes its task
+2. Fetches the agency-agents catalog (GitHub raw)
+3. Picks the best-fitting role
+4. Announces via kanban_heartbeat
+5. Loads the role's .md specification
+6. Works as that specialist
 
-1. **Analyze your task.** Read with `kanban_show()`. Identify the domain, activity type (build/audit/research/manage), output, and scope.
+If no matching role exists, the worker proceeds as a generalist.
 
-2. **Read the catalog.** Fetch the full README from GitHub raw:
-   ```
-   curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/main/README.md
-   ```
-   → 17 categories, 210+ specialist roles with use-case tables.
-   Each role has an emoji. Note it.
+## Reference URLs
 
-3. **Pick your role.** Choose the best-fitting specialist. Note its **emoji** from the table.
+- Catalog: https://raw.githubusercontent.com/msitarzewski/agency-agents/main/README.md
+- Role file: https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{category}/{filename}.md
 
-4. **Announce adoption.** Immediately call:
-   ```
-   kanban_heartbeat(note="🎭 Role adopted: {emoji} {role-name}")
-   ```
+## Project repo
 
-5. **Load the personality.** Fetch the role's full .md specification:
-   ```
-   curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{category}/{filename}.md
-   ```
-
-6. **Adopt it.** Follow its rules, standards, philosophy, and process faithfully. Embody the role completely.
-
-7. **Act.** Execute your task as that specialist.
-
----
-
-🎭 *Pick your mask. Become the expert.*
+https://github.com/Caixa-git/hermes-persona
 SKILL
 
 echo "   ✅ persona skill created at ${SKILL_FILE}"
@@ -79,9 +65,9 @@ echo "   ✅ persona skill created at ${SKILL_FILE}"
 # Patch KANBAN_GUIDANCE — already done in prompt_builder.py
 echo "   ✅ KANBAN_GUIDANCE patched (persona section is now built-in)"
 echo ""
-echo "🎭 설치가 완료되었습니다!"
+echo "🎭 Installation complete!"
 echo ""
-echo "이제 Hermes Agent가 작업을 처리할 때마다"
-echo "자동으로 가장 적합한 전문가 페르소나를 선택합니다."
+echo "From now on, every kanban worker will automatically"
+echo "pick the best-fitting expert persona for its task."
 echo ""
-echo "별도 설정이 필요하지 않습니다."
+echo "No additional setup or flags needed."
