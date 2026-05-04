@@ -36,38 +36,99 @@ if [ -f "$PB_FILE" ]; then
     if grep -q "## persona — role adoption" "$PB_FILE"; then
         echo "   ⏭️  Already patched (persona section found)"
     else
-        # Find the position of KANBAN_GUIDANCE closing paren
-        # Insert persona section before the closing paren of KANBAN_GUIDANCE
-        sed -i '' '/^)$/i\
-    "## persona — role adoption\\n"\
-    "\\n"\
-    "1. **Analyze your task.** `kanban_show()` then analyze the task body — domain, output type, complexity, tech stack.\\n"\
-    "2. **Pick a role.** Fetch the README from the agency-agents repository:\\n"\
-    "   `curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/main/README.md`\\n"\
-    "   → scan 17 categories, 210+ specialist roles. Note the role'\''s **emoji**.\\n"\
-    "   Apply these research-backed principles when choosing:\\n"\
-    "   \\n"\
-    "   **1. Output-type alignment** (MetaGPT 2023; Hong et al., ICLR 2024)\\n"\
-    "   Each role has a canonical output artifact. Pick the role whose standard deliverable matches what the task needs. A Backend Architect writes API specs and schema — if the task is a PRD or roadmap, pick Product Manager instead. Mismatch wastes the role'\''s SOP pipeline.\\n"\
-    "   \\n"\
-    "   **2. Role boundary clarity** (CAMEL 2023; Li et al., NeurIPS 2023)\\n"\
-    "   Pick exactly ONE role with clear, non-overlapping responsibilities. If other workers already exist on this board, avoid picking a role that duplicates or conflicts. Ambiguous role boundaries cause coordination overhead.\\n"\
-    "   \\n"\
-    "   **3. Task decomposition priority** (AgentVerse 2023; Chen et al., ICML 2024)\\n"\
-    "   Analyze the task'\''s internal structure. If it spans multiple domains, pick the role covering the PRIMARY domain — the subtask everything else depends on. The kanban chain handles the rest.\\n"\
-    "   \\n"\
-    "   **4. Confidence threshold** (AutoGen 2023; Wu et al., Microsoft Research)\\n"\
-    "   If no role'\''s fit exceeds 30%, proceed as a generalist. Forcing a poor match creates more problems than it solves.\\n"\
-    "   \\n"\
-    "3. **Announce adoption.** Call `kanban_heartbeat(note=...` with:\\n"\
-    "   `🎭 Role adopted: {emoji} {role-name}`\\n"\
-    "4. **Load the personality.** Fetch the role'\''s full specification:\\n"\
-    "   `curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{category}/{filename}.md`\\n"\
-    "5. **Adopt it.** Become that expert. Follow its rules, standards, and process.\\n"\
-    "6. **Act.** Work on your task as that role.\\n"\
-    "If no matching role exists, proceed as a generalist."\' "$PB_FILE" 2>/dev/null && \
-        echo "   ✅ KANBAN_GUIDANCE patched (persona section with research principles)" || \
-        echo "   ⚠️  Could not patch KANBAN_GUIDANCE. See docs for manual patching."
+        # Back up prompt_builder.py before modifying
+        PB_BACKUP="${PB_FILE}.bak.$(date +%s)"
+        cp "$PB_FILE" "$PB_BACKUP" || { echo "   ❌ Failed to create backup"; exit 1; }
+
+        # Use Python to safely locate KANBAN_GUIDANCE's closing paren
+        # and insert the persona section — avoids fragile sed /^)$/ matching.
+        # Write a self-contained patcher script (avoids heredoc escaping hell).
+        PATCH_SCRIPT="$(mktemp /tmp/hermes-persona-patch.XXXXXX.py)"
+        cat > "$PATCH_SCRIPT" << 'PYPATCH_SCRIPT'
+import sys
+
+pb_file = sys.argv[1]
+with open(pb_file, 'r') as f:
+    content = f.read()
+
+# Locate KANBAN_GUIDANCE tuple and find its matching closing paren
+kg_start = content.index('KANBAN_GUIDANCE = (')
+paren_start = content.index('(', kg_start)
+
+depth = 1
+i = paren_start + 1
+while i < len(content) and depth > 0:
+    if content[i] == '(':
+        depth += 1
+    elif content[i] == ')':
+        depth -= 1
+    i += 1
+close_idx = i - 1  # index of the closing ')'
+
+# Persona lines — each is one string literal line in prompt_builder.py
+# Using double-quoted Python strings so apostrophes (') don't need escaping
+persona_lines = [
+    "    \"\\n\"",
+    "    \"## persona — role adoption\\n\"",
+    "    \"\\n\"",
+    "    \"1. **Analyze your task.** `kanban_show()` then analyze the task body — domain, output type, complexity, tech stack.\\n\"",
+    "    \"2. **Pick a role.** Fetch the README from the agency-agents repository:\\n\"",
+    "    \"   `curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/main/README.md`\\n\"",
+    "    \"   → scan 17 categories, 210+ specialist roles. Note the role's **emoji**.\\n\"",
+    "    \"   Apply these research-backed principles when choosing:\\n\"",
+    "    \"   \\n\"",
+    "    \"   **1. Output-type alignment** (MetaGPT 2023; Hong et al., ICLR 2024)\\n\"",
+    "    \"   Each role has a canonical output artifact. Pick the role whose standard deliverable matches what the task needs. A Backend Architect writes API specs and schema — if the task is a PRD or roadmap, pick Product Manager instead. Mismatch wastes the role's SOP pipeline.\\n\"",
+    "    \"   \\n\"",
+    "    \"   **2. Role boundary clarity** (CAMEL 2023; Li et al., NeurIPS 2023)\\n\"",
+    "    \"   Pick exactly ONE role with clear, non-overlapping responsibilities. If other workers already exist on this board, avoid picking a role that duplicates or conflicts with theirs. Ambiguous role boundaries cause coordination overhead and contradictory decisions.\\n\"",
+    "    \"   \\n\"",
+    "    \"   **3. Task decomposition priority** (AgentVerse 2023; Chen et al., ICML 2024)\\n\"",
+    "    \"   Analyze the task's internal structure. If it spans multiple expertise domains, pick the role that covers the PRIMARY domain — the subtask that everything else depends on. The kanban's sub-task chain handles the rest. A single role can't be a full-stack generalist.\\n\"",
+    "    \"   \\n\"",
+    "    \"   **4. Confidence threshold** (AutoGen 2023; Wu et al., Microsoft Research)\\n\"",
+    "    \"   If no role's fit exceeds 30%, proceed as a generalist rather than forcing a bad match. Overriding a poor fit creates more problems than it solves — follow the procedure, don't invent non-existent expertise.\\n\"",
+    "    \"   \\n\"",
+    "    \"3. **Announce adoption.** Call `kanban_heartbeat(note=...` with:\\n\"",
+    "    \"   `🎭 Role adopted: {emoji} {role-name}`\\n\"",
+    "    \"4. **Load the personality.** Fetch the role's full specification:\\n\"",
+    "    \"   `curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{category}/{filename}.md`\\n\"",
+    "    \"5. **Adopt it.** Become that expert. Follow its rules, standards, and process.\\n\"",
+    "    \"6. **Act.** Work on your task as that role.\\n\"",
+    "    \"If no matching role exists, proceed as a generalist.\"",
+]
+persona = '\n'.join(persona_lines) + '\n'
+
+# Insert persona section before the closing paren
+new_content = content[:close_idx] + persona + content[close_idx:]
+
+with open(pb_file, 'w') as f:
+    f.write(new_content)
+
+# Validate Python syntax
+import ast
+try:
+    ast.parse(new_content)
+    print("SYNTAX_OK")
+except SyntaxError as e:
+    print(f"SYNTAX_ERROR: {e}")
+    sys.exit(1)
+PYPATCH_SCRIPT
+
+        python3 "$PATCH_SCRIPT" "$PB_FILE" > /tmp/hermes-persona-patch.out 2>&1
+        PATCH_RC=$?
+        PATCH_OUT=$(cat /tmp/hermes-persona-patch.out 2>/dev/null || true)
+        rm -f "$PATCH_SCRIPT" /tmp/hermes-persona-patch.out
+
+        if [ "$PATCH_RC" -eq 0 ] && echo "$PATCH_OUT" | grep -q "SYNTAX_OK"; then
+            echo "   ✅ KANBAN_GUIDANCE patched (persona section with research principles)"
+            echo "   📦 Backup saved: ${PB_BACKUP}"
+        else
+            echo "   ⚠️  Python patch failed. Restoring backup."
+            echo "   Debug: $PATCH_OUT"
+            cp "$PB_BACKUP" "$PB_FILE"
+            echo "   See docs for manual patching."
+        fi
     fi
 else
     echo "   ⚠️  prompt_builder.py not found. See docs for manual patching."
