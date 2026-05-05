@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+  <!-- Wings -->
+  <path d="M10 55 Q-8 30 8 8 Q18 22 24 35 Q20 40 18 50Z" fill="url(#g)" opacity="0.35"/>
+  <path d="M110 55 Q128 30 112 8 Q102 22 96 35 Q100 40 102 50Z" fill="url(#g)" opacity="0.35"/>
+  <path d="M5 50 Q-15 25 2 2 Q14 18 20 30Q15 38 14 48Z" fill="url(#g)" opacity="0.2"/>
+  <path d="M115 50 Q135 25 118 2 Q106 18 100 30Q105 38 106 48Z" fill="url(#g)" opacity="0.2"/>
+  <!-- Face -->
+  <ellipse cx="60" cy="58" rx="34" ry="32" fill="none" stroke="url(#g)" stroke-width="2.5"/>
+  <!-- Eyes -->
+  <ellipse cx="46" cy="48" rx="8" ry="6" fill="url(#g)" opacity="0.85"/>
+  <ellipse cx="74" cy="48" rx="8" ry="6" fill="url(#g)" opacity="0.85"/>
+  <!-- Eye highlights -->
+  <ellipse cx="44" cy="46" rx="3" ry="2" fill="white" opacity="0.5"/>
+  <ellipse cx="72" cy="46" rx="3" ry="2" fill="white" opacity="0.5"/>
+  <!-- Smile -->
+  <path d="M45 68 Q60 80 75 68" fill="none" stroke="url(#g)" stroke-width="2" stroke-linecap="round"/>
+  <!-- Nose -->
+  <path d="M60 54 L58 62 L62 62Z" fill="url(#g)" opacity="0.4"/>
+  <!-- Dots -->
+  <circle cx="45" cy="42" r="1.5" fill="#a78bfa" opacity="0.6"/>
+  <circle cx="75" cy="42" r="1.5" fill="#a78bfa" opacity="0.6"/>
+</svg>
