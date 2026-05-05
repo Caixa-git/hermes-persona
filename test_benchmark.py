@@ -19,8 +19,14 @@ def test(name, condition, detail=""):
         FAIL += 1; print(f"  ❌ {name}" + (f"\n     └─ {detail}" if detail else ""))
 
 def read_skill():
+    """Read SKILL.md from installed path or local repo path as fallback."""
     p = os.path.expanduser("~/.hermes/skills/persona/SKILL.md")
-    with open(p) as f: return f.read()
+    try:
+        with open(p) as f: return f.read()
+    except FileNotFoundError:
+        # Fallback: local repo path
+        local = os.path.join(os.path.dirname(__file__) or ".", "skills", "persona", "SKILL.md")
+        with open(local) as f: return f.read()
 
 def fetch_roles():
     with urllib.request.urlopen(AGENCY_AGENTS_URL, timeout=10) as r:
@@ -30,7 +36,7 @@ def role_exists(text, name):
     return bool(re.search(r'\[' + re.escape(name) + r'\]\(', text))
 
 # ── Part 1: SKILL.md integrity ──
-print("\n📋 [1/4] SKILL.md — principles & citations")
+print("\n📋 [1/5] SKILL.md — principles & citations")
 print("-" * 40)
 skill = read_skill()
 
@@ -41,7 +47,7 @@ for c in ["MetaGPT", "CAMEL", "AgentVerse", "AutoGen", "ICLR", "NeurIPS", "ICML"
     test(f"Citation: {c}", c in skill)
 
 # ── Part 2: Catalog accessibility ──
-print("\n📡 [2/4] Agency-agents catalog")
+print("\n📡 [2/5] Agency-agents catalog")
 print("-" * 40)
 if OFFLINE:
     print("  ⏭️  Skipped (--offline mode)")
@@ -59,7 +65,7 @@ else:
         readme = ""
 
 # ── Part 3: Task-to-role mapping ──
-print("\n🔗 [3/4] Task → role mappings")
+print("\n🔗 [3/5] Task → role mappings")
 print("-" * 40)
 if OFFLINE:
     print("  ⏭️  Skipped (--offline mode)")
@@ -90,7 +96,7 @@ else:
         test(f"'{task[:25]}...' → {expected}", role_exists(readme, expected)) if readme else None
 
 # ── Part 4: Repository integrity ──
-print("\n🔍 [4/4] Repository integrity")
+print("\n🔍 [4/5] Repository integrity")
 print("-" * 40)
 
 # 4a: pyproject.toml version detection
@@ -118,6 +124,25 @@ if os.path.isdir(ref_dir):
              f"Expected ≥20, got {lines}")
 else:
     test("Reference docs directory", False, f"Not found: {ref_dir}")
+
+# ── Part 5: install.sh integrity ──
+print("\n📦 [5/5] install.sh integrity")
+print("-" * 40)
+
+ish_path = os.path.join(os.path.dirname(__file__) or ".", "install.sh")
+if os.path.exists(ish_path):
+    with open(ish_path) as f:
+        ish = f.read()
+    
+    test("install.sh exists", len(ish) > 0)
+    test("install.sh shebang: #!/usr/bin/env bash", ish.startswith("#!/usr/bin/env bash"))
+    test("install.sh has --help flag", "--help" in ish)
+    test("install.sh has --dry-run flag", "--dry-run" in ish)
+    test("install.sh has install logic", "ACTION=\"install\"" in ish
+         or "install" in ish[:200])
+    test("install.sh has uninstall logic", "uninstall" in ish)
+else:
+    test("install.sh exists", False, f"Not found: {ish_path}")
 
 # ── Summary ──
 total = PASS + FAIL
