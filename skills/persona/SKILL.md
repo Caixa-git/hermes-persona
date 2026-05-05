@@ -276,12 +276,13 @@ PRECONDITION:
 Experiment (2026-05-05): Multi-persona beats sequential task-split **7-0** on "write an AI Agent paper" task — 39% faster, 54% cheaper, higher consistency and originality.
 → See `references/multi-persona-experiment.md` for full methodology and metrics.
 
-### Future work
+### Future work (2026-05-06 status)
 
 - [ ] Empirical: sweep R × P × A to find optimal settings per task type
 - [ ] Verify: does minor's experience field alone produce more genuine diversity than full spec across different model families?
 - [ ] Multi-model multi-persona: major on model A, minor on model B (bypasses Reasoning Trap)
 - [ ] Calibration protocol: automated test suite to re-derive Φ, α, β, Γ_base for new models
+  ⚠️ All 4 items remain open as of 2026-05-06. Not blocking current release.
 
 ## Gateway Identity & Persona Contract
 
