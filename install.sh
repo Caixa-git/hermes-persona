@@ -117,7 +117,26 @@ else
   fi
 fi
 
-# 3. Validate
+# 3. Deploy durable constants module
+echo -n "  Durable constants... "
+if [ -d "${HOME}/.hermes/hermes-agent/agent" ]; then
+  cp "$(dirname "$0")/../agent/anima_persona.py" "${HOME}/.hermes/hermes-agent/agent/anima_persona.py" 2>/dev/null
+  # Ensure prompt_builder.py imports from the durable module
+  PB="${HOME}/.hermes/hermes-agent/agent/prompt_builder.py"
+  if [ -f "$PB" ]; then
+    if ! grep -q "from agent.anima_persona import" "$PB" 2>/dev/null; then
+      # Add import after utils import
+      sed -i '' '/^from utils import/a\\nfrom agent.anima_persona import ANIMA_PERSONA_LOADED, GATEWAY_PLATFORMS, GATEWAY_ANIMA_PERSONA_IDENTITY  # noqa: F401' "$PB" 2>/dev/null || \\\n      sed -i '/^from utils import/a\\nfrom agent.anima_persona import ANIMA_PERSONA_LOADED, GATEWAY_PLATFORMS, GATEWAY_ANIMA_PERSONA_IDENTITY  # noqa: F401' "$PB" 2>/dev/null
+    fi
+    echo -e "${GREEN}done${NC}"
+  else
+    echo -e "${YELLOW}prompt_builder.py not found${NC}"
+  fi
+else
+  echo -e "${YELLOW}hermes-agent not found${NC}"
+fi
+
+# 4. Validate
 echo ""
 if [ -f "$DEST/SKILL.md" ]; then
   echo -e "${GREEN}✅${NC} hermes-persona installed"
