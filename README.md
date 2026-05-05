@@ -36,7 +36,6 @@ hermes-persona/
 ├── skills/persona/SKILL.md    ← The persona system (prompt)
 ├── install.sh                  ← One-line installer
 ├── test_benchmark.py           ← CI test
-├── archive/                    ← Historical docs & single-use scripts
 ├── SECURITY_AUDIT.md           ← Minimal risk assessment
 ├── CONTRIBUTING.md
 └── README.md
