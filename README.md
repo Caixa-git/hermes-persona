@@ -8,10 +8,15 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/msitarzewski/agency-agents"><img src="https://img.shields.io/badge/roles-172-2ea44f?style=flat-square&labelColor=1a1a2e&color=6366f1" alt="roles"></a>
-  <a href="https://github.com/msitarzewski/agency-agents"><img src="https://img.shields.io/badge/categories-15-8b5cf6?style=flat-square&labelColor=1a1a2e&color=a78bfa" alt="categories"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square&labelColor=1a1a2e&color=3b82f6" alt="license"></a>
+  <a href="https://github.com/msitarzewski/agency-agents"><img src="https://img.shields.io/badge/roles-172-6366f1?style=flat-square&labelColor=1a1a2e" alt="roles"></a>
+  <a href="https://github.com/msitarzewski/agency-agents"><img src="https://img.shields.io/badge/categories-15-a78bfa?style=flat-square&labelColor=1a1a2e" alt="categories"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-3b82f6?style=flat-square&labelColor=1a1a2e" alt="license"></a>
   <a href="https://github.com/Caixa-git/hermes-persona/releases"><img src="https://img.shields.io/github/v/release/Caixa-git/hermes-persona?style=flat-square&labelColor=1a1a2e&color=06b6d4" alt="release"></a>
+  <a href="https://github.com/Caixa-git/hermes-persona/actions"><img src="https://img.shields.io/github/actions/workflow/status/Caixa-git/hermes-persona/ci.yml?style=flat-square&labelColor=1a1a2e&color=22c55e&label=CI" alt="CI"></a>
+</p>
+
+<p align="center">
+  <img alt="persona in action" src=".github/hero-terminal.svg" width="720">
 </p>
 
 ---
