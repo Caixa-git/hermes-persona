@@ -82,178 +82,16 @@ kanban_create(
 )
 ```
 
+
 Without `skills=["persona"]`, child workers run as generalists.
 
-### Verified: chain propagation works
 
-Tested with an e-commerce decomposition task:
-
-| Level | Task | Role adopted | Status |
-|-------|------|-------------|--------|
-| Parent | E-commerce decomposer | 🎭 Agents Orchestrator | ✅ |
-| Child 1 | Frontend: React storefront | 🎨 Frontend Developer | ✅ |
-| Child 2 | Backend: Payment API | 🏗️ Backend Architect | ✅ |
-| Child 3 | DevOps: CI/CD pipeline | ⚙️ DevOps Automator | ✅ |
-
-See `references/chain-propagation-test.md` for full test transcript.
-
-## Usage workflow
-
-### Standard interaction pattern
-
-```bash
-# 1. Create task with --skill persona
-hermes kanban create '[M1] Add SHA256 checksum' \
-  --body 'Fix from audit: add SHA256 checksum to install.sh' \
-  --skill persona
-
-# 2. Assign to persona-worker profile
-hermes kanban assign t_xxxx persona-worker
-
-# 3. Dispatch
-hermes kanban dispatch
-```
-
-**Batch related fixes** into one task to reduce total runtime. **Keep unrelated fixes separate** so each worker focuses on its domain.
-
-### Verifying adoption
-
-```bash
-hermes kanban show <task_id> | grep heartbeat
-# → [timestamp] heartbeat {'note': '🎭 Role adopted: 🏗️ Backend Architect'}
-```
-
-### Multi-worker parallelism
-
-Dispatch spawns one worker per ready+assigned task in a single pass:
-
-```bash
-hermes kanban dispatch
-# Spawned: 2
-#   - t_xxx  ->  persona-worker
-#   - t_yyy  ->  persona-worker
-```
 
 ## Installation
 
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh)
 ```
-
-The installer:
-1. Creates `~/.hermes/skills/persona/SKILL.md` — the worker-facing persona skill
-2. Enables `kanban` toolset in `~/.hermes/config.yaml`
-3. Generates `install.sh.sha256` for integrity verification (two-step install: `sha256sum -c install.sh.sha256 && bash install.sh`)
-
-### Step 6: KANBAN_GUIDANCE patch (scripts/patch-kanban-guidance.py)
-
-**Install.sh Step 6 now ACTUALLY patches KANBAN_GUIDANCE.** 
-The `scripts/patch-kanban-guidance.py` script modifies `agent/prompt_builder.py` to inject the identity section into the `KANBAN_GUIDANCE` tuple.
-
-**What the patch adds to KANBAN_GUIDANCE (every kanban worker's system prompt):**
-
-The identity section is a SINGLE unified section covering both persona and anima:
-
-```
-## identity — persona & anima (Layer 13)
-
-CRITICAL — Priority Rules:
-  Anima (nature) > Persona (role)
-  Both at Layer 13 — same proximity, different authority
-  Explicit social framing is the ONLY reliable priority guard
-
-Step 0-2: Injection awareness → task analysis → role selection (4 principles)
-Step 3:   Extract domain from role path
-Step 4:   Fetch anima profile (hermes-anima repo)
-Step 5:   Announce both (🎭 Role + 🧠 Anima)
-Step 6:   Load role specification
-Step 7:   Adopt both — nature prevails on conflict
-Step 8:   Act
-Step 9:   Persist identity to SOUL.md
-```
-
-> **⚠️ CRITICAL: Persona and anima were UNIFIED in May 2026.**
-> The original patch (created in early May 2026) had **two separate sections**:
-> - `## persona — role adoption (tool-level)` (standalone)
-> - `## anima — core nature adoption (User message level)` (separate)
->
-> These were merged into ONE `## identity — persona & anima (Layer 13)` section
-> on May 5, 2026. The patch script (`patch-kanban-guidance.py`) still produces
-> the original format. The unified version was applied via direct file edit.
->
-> **If you run `patch-kanban-guidance.py` after the unification was applied:**
-> The script checks for a sentinel it added. If the sentinel is gone (because
-> the file was unified), the script will find a close match and may produce
-> duplicate sections. Always verify with:
-> ```bash
-> grep -c "## identity\|## persona\|## anima" ~/.hermes/hermes-agent/agent/prompt_builder.py
-> ```
-> Expected after unification: 1 result (`## identity — persona & anima (Layer 13)`)
-> Expected after old-style patch: 2 results (`## persona` + `## anima`)
->
-> To re-unify: re-read `prompt_builder.py` and manually replace the two sections
-> with the single identity section using patch tool (not the Python patch script).
-> The unified text is in the conversation history (May 5, 2026).
-
-**Two activation paths coexist:**
-
-| Path | Level | When | Status |
-|------|-------|------|--------|
-| KANBAN_GUIDANCE (prompt_builder.py) | System prompt (Layer 3) | Every kanban worker, unconditional | ✅ Patched (identity section) |
-| --skill persona (SKILL.md) | User message (Layer 13) | Only when --skill persona is passed | ✅ Original mechanism |
-| --skill anima (SKILL.md) | User message (Layer 13) | Only when --skill anima is passed | ✅ From hermes-anima repo |
-
-**Verification:**
-```bash
-# Full identity section + profile URL + content validation
-python3 ~/.hermes/skills/persona/scripts/verify-identity-section.py
-
-# Quick prompt_builder-only check (no network)
-python3 ~/.hermes/skills/persona/scripts/verify-identity-section.py --prompt-builder-only
-
-# Manual grep checks
-grep -c "## identity" ~/.hermes/hermes-agent/agent/prompt_builder.py
-# Expected: 1 (unified) or 2 (old-style: persona + anima separate)
-python3 -c "import ast; ast.parse(open('$HOME/.hermes/hermes-agent/agent/prompt_builder.py').read())"
-# Expected: no syntax errors
-```
-
-## Git Flow requirement (repo work)
-
-All work on the hermes-persona repository **must** follow Git Flow:
-
-### Language: English only on GitHub
-All GitHub-facing text is **English only**:
-- Branch names (`fix/ci-workflow`, `feature/jwt-auth`)
-- Commit messages (`fix: restore CI workflow`)
-- PR titles and bodies
-- Issue titles and descriptions
-- README, CONTRIBUTING, SECURITY_AUDIT, CHANGELOG, and all `.md` docs
-- Code comments in public-facing code
-- GitHub Releases and tags
-
-**Korean is for Discord chat only.** The user communicates in Korean via gateway but expects public-facing GitHub artifacts in English. This applies to ALL repositories managed through this system, not just hermes-persona.
-
-### Branch strategy
-
-```
-main       → production-ready
-develop    → integration branch
-fix/*      → bug fixes
-feature/*  → features
-release/*  → releases
-hotfix/*   → urgent fixes
-```
-
-Procedure:
-1. Branch from `develop`: `git checkout -b fix/xyz develop`
-2. Work and commit on the branch
-3. Push: `git push origin fix/xyz`
-4. Create PR to `develop`
-5. Merge to `main` only after `develop` is stable
-
-No direct commits to `main` or `develop`. Every merge requires a PR.
-
 ## Pitfalls & operational notes
 
 | Pitfall | Symptom | Fix |
@@ -280,39 +118,6 @@ No direct commits to `main` or `develop`. Every merge requires a PR.
 | **Test not updated after activation change** | `test_benchmark.py` checks prompt_builder.py but the activation source may have moved | Run `python3 test_benchmark.py` after any change to persona activation mechanism. Update Part 1's `get_persona_skill()` if the source file path changes again. |
 | **Mismatched specialist forces wrong framing** | Worker produces output in wrong domain language (e.g. DevOps SLAs for a meal plan) | Always respect the 30% confidence threshold. If no specialist fits >30%, proceed WITHOUT a specialist role — mismatching does measurable harm (40-50% degradation). See `references/generalist-experiment-results.md`. |
 | **`operations/` directory does NOT exist** | Worker constructs a URL like `operations/operations-cicd-pipeline-setup.md` which 404s | The agency-agents repo has NO `operations/` category. CI/CD / pipeline roles live under `engineering/engineering-devops-automator.md` or `testing/testing-workflow-optimizer.md`. Verify with `curl -s https://api.github.com/repos/msitarzewski/agency-agents/contents/operations` — expect Not Found. The verify script at `scripts/verify-identity-section.py` uses `testing-workflow-optimizer.md` as its sample. |
-
-### Timing benchmarks (real session data)
-
-| Session | Tasks | Duration avg | Notes |
-|---------|-------|-------------|-------|
-| Security audit (read-only) | 1 | ~6 min | Inspect + report write |
-| Single-file fix | 2 | ~5 min | One-line changes |
-| Two-file fix + references | 2 | ~15 min (with restart) | 315-line diff |
-| Multi-remediation (3 fixes) | 3 (parallel) | ~13 min | 350-line diff, SHA256 gen |
-| Chain propagation test | 1 parent → 3 child | ~3 min per child | All adopted roles |
-
-Plan ~15 min per task. Batch simple fixes to reduce total time.
-
-## References
-
-See `references/` in this skill directory for:
-- `kanban-guidance-patch.md` — exact patch text added to KANBAN_GUIDANCE (legacy, pre-opt-in design)
-- `role-url-patterns.md` — GitHub raw URL construction for all 15 categories
-- `benchmark-methodology.md` — 15-task benchmark design, results (15/15 correct), and caveats
-- `security-audit-methodology.md` — Step-by-step audit workflow using 🔒 Security Engineer persona
-- `kanban-dispatch-setup.md` — Profile creation, config setup, dispatcher configuration
-- `chain-propagation-test.md` — Verified test: persona propagates from parent to child tasks
-- `spawn-flow-analysis.md` — Full message flow trace for kanban worker spawn
-- `prompt-layering-architecture.md` — Layer-by-layer breakdown of Hermes Agent prompts
-- `multi-reviewer-analysis-pattern.md` — Multi-reviewer analysis pattern for security/qa workflows
-- `subtle-contradiction-test-results.md` — Experimental data on anima vs persona priority
-- `research-papers-anima-persona.md` — Collected papers on personality effects and instruction hierarchy
-- `crypto-market-workflow.md` — Using Finance Tracker persona with live market data (CoinGecko, Upbit)
-- `identity-section-unification.md` — How persona + anima were merged into a single identity section in KANBAN_GUIDANCE
-- `generalist-experiment-results.md` — Empirical validation: generalist fallback beats mismatched specialist for domain-free tasks (6-task kanban test, 2026-05-05)
-- `adaptive-expertise-research.md` — Condensed research foundations for generalist persona design (Hatano & Inagaki, 2603.06088, 2604.11048)
-
-For **anima-related research** (OCEAN profiles, identity-level wording, layer architecture), see [hermes-anima](https://github.com/Caixa-git/hermes-anima) — it's a separate project with its own skill, profiles, and patch script.
 
 ## Anima / Persona relationship
 
@@ -487,13 +292,6 @@ This monitoring loop is **not heuristic** — it is a structural check against t
 
 The `persona-worker` profile (or any profile with `OPENAI_API_KEY` set and a capable model) is recommended. The skill alone doesn't guarantee good results — the underlying model must be capable of role adoption. GPT-4o and DeepSeek-V4 have been tested.
 
-### Anima-related research
-
-Research papers on personality effects (2603.06088, 2604.11048) and instruction hierarchy
-(2502.15851, AAAI 2026) are collected in `references/research-papers-anima-persona.md`.
-These inform the anima > persona priority design. See the
-[hermes-anima](https://github.com/Caixa-git/hermes-anima) project for application guidance.
-
 ## ⚠️ Generalist: NOT a Persona — It's an Anima
 
 **Critical finding (2026-05-05, empirically verified):**  
@@ -521,19 +319,9 @@ Empirically verified 2026-05-05: for domain-free tasks (no specialist >30% confi
 
 Generalist is NOT "empty" — it's "unforced, natural, adaptive." A generalist has no domain-specific framing to enforce, so it responds to the task as-is, producing output in the task's native language rather than in the language of a forced specialist role.
 
-### Research Foundation (12 papers)
+### Research Foundation
 
-| Core Theory | Paper(s) | Generalist Implication |
-|:------------|:---------|:-----------------------|
-| **Cognitive Entrenchment** | Dane (2010), AMR | Deep expertise reduces flexibility. Generalist avoids this by staying domain-neutral. |
-| **Suppression Advantage** | 2603.06088 (Wang et al., 2026) | High E impairs reasoning → Generalist **E=50** (neutral) |
-| **O/E Influence** | 2604.11048 (Chen et al., 2026) | O+E most influential on persona → Generalist **O=70, E=50** |
-| **Control Illusion** | 2502.15851 (Geng et al., AAAI 2026) | Layer position alone fails → social framing needed for priority |
-| **G vs S Comparison** | 2310.15326 (2023) | Generalist covers breadth; specialist wins depth. Different tools for different tasks. |
-| **GS Collaboration** | 2404.15127 (GSCo, 2024) | Generalist + Specialist synergy > either alone |
-| **Personality Pairing** | 2511.13979 (2025) | A matters for collaboration → Generalist **A=65** |
-| **Personality Induction** | 2506.20993 (SAC, 2025), 2406.12548 (P-React, 2024) | OCEAN can be engineered and measured in LLMs |
-| **Adaptive Expertise** | Hatano & Inagaki (1986) | Adaptive > Routine expertise for novel tasks |
+Full 12-paper table at [hermes-anima](https://github.com/Caixa-git/hermes-anima) `references/generalist-definition.md`.
 
 ### Generalist OCEAN Profile (paper-backed)
 
@@ -545,41 +333,9 @@ Generalist is NOT "empty" — it's "unforced, natural, adaptive." A generalist h
 | **A**greeableness | **65/100** | 2511.13979 — personality pairing | Cooperative enough for social tasks; not so deferential it loses autonomy |
 | **N**euroticism | **30/100** | Cognitive entrenchment + adaptive expertise | Low reactivity = resilient task switching. Stable baseline. |
 
-### Key Findings from Empirical Validation
-
-| Finding | Evidence |
-|:--------|:---------|
-| **Generalist > Mismatched specialist** | 6-task kanban test (G2/G3 vs M2/M3) — Generalist wins on naturalness and reasoning fit |
-| **Confidence threshold works** | G2 heartbeat: `🎭 Proceeding as generalist (no matching specialist)` |
-| **Semantic > keyword matching** | M1 ("system review" title + Fed content) correctly picked Financial Analyst, not Backend Architect |
-| **Mismatch distorts output** | M2 forced DevOps SLAs on a meal plan; M3 forced security audit frame on a child's explanation |
-
-### Why Generalist Beats Mismatched
-
-A mismatched specialist forces the wrong *output frame* on a task. The worker dresses the output in domain-specific language (SLA, MTTR, rollback for a meal plan) because its adopted role demands it. A generalist has no frame to enforce — it simply responds to the task as-is, producing natural output.
-
-### Implications
-
-- Do NOT force a specialist when confidence <30% — the output quality penalty is real (40-50% degradation)
+- Do NOT force a specialist when confidence <30% — output quality penalty is real (40-50% degradation)
 - Generalist is "adaptive, not empty" — the worker should proceed confidently, not apologetically
-- The 12 papers above justify defining Generalist as its own profile, not just a null state
-
-### Validating Persona Behavior (Experiment Protocol)
-
-When testing persona behavior hypotheses, follow this sequential protocol:
-
-1. **Persona-only first** — Test with `--skill persona` and NO `--skill anima`. Isolate role adoption effects.
-2. **Three matched pairs** — Create G (generalist/domain-free) and M (keyword-triggered specialist) versions of the same 3 tasks. Total: 6 kanban tasks.
-3. **Observe role adoption** — Read heartbeat notes from `kanban_show`. Does the worker pick the expected role? Does it explicitly state "generalist fallback"?
-4. **Compare output files** — Read workspace output. Is the framing natural for the task? Does the mismatched specialist force wrong-domain language?
-5. **Evaluate on 3 criteria** — Use this rubric (NO user satisfaction metric):
-   - Reasoning fit (40%) — Does reasoning style match task domain?
-   - Output naturalness (30%) — Would a human find this natural?
-   - Forced jargon penalty (30%) — Does unnecessary specialist terminology distract?
-
-See `references/generalist-experiment-results.md` for full transcript and methodology.
-See `scripts/generalist-fallback-test.sh` for a reproducible test harness — run `bash scripts/generalist-fallback-test.sh` to recreate the experiment.
-See `references/adaptive-expertise-research.md` for condensed research notes on all 12 papers.
+- The full 12-paper research foundation is at hermes-anima `references/generalist-definition.md`
 
 ## Role selection principles (research-backed)
 
@@ -603,20 +359,13 @@ Pick the role covering the primary domain (the subtask everything else depends o
 
 | Case | Behavior |
 |------|----------|
-| No matching role | Worker proceeds WITHOUT a specialist role (generalist = anima, not persona) |
-| Multiple roles match | Worker picks single best fit from README table |
+| No matching role | Worker proceeds WITHOUT a specialist role |
+| Multiple roles match | Worker picks single best fit |
 | GitHub raw unavailable | Worker cannot fetch catalog → generalist fallback |
-| Task is trivial | Worker scans; most trivial tasks match no specialist → generalist |
-| `--skill persona` omitted | Worker has no persona instructions → generalist |
+| `--skill persona` omitted | Worker has no persona instructions |
 | Child created without `skills=['persona']` | Child runs as generalist |
 | `delegate_task()` | Persona does NOT activate |
-| Active profile (`-p <name>`) | HERMES_HOME changes → load_soul_md() reads different SOUL.md. Main `~/.hermes/SOUL.md` is NOT the profile's SOUL.md. |
-| KANBAN_GUIDANCE persona section | Is the persona role adoption section present in prompt_builder.py? | After install.sh Step 6: YES (check: `grep -c "persona -- role adoption" ~/.hermes/hermes-agent/agent/prompt_builder.py`). The section includes Steps 0-7 for injection-aware role adoption from agency-agents. |
-| Gateway persona vs worker persona | `~/.hermes/SOUL.md` (gateway identity) and `~/.hermes/profiles/persona-worker/SOUL.md` (worker identity) are DIFFERENT files in DIFFERENT directories. Workers are not affected by changes to main SOUL.md. |
-| hermes-persona repo vs hermes-agent source | When working on hermes-persona, read `/tmp/hermes-persona/` (repo clone) — NOT `~/.hermes/hermes-agent/` which is the Hermes Agent framework source. The two are separate codebases. |
-| GitHub push via `gh` CLI or `git push` | **BANNED** — workers must NOT use GitHub tokens for write operations. Role catalog fetching via `curl` (read-only) is allowed. All git operations (commit, push, PR) are the orchestrator's responsibility. |
-| Worker tries `git commit` or `git push` | The scratch workspace is NOT a git repository. If the worker needs to create files, it writes to `$HERMES_KANBAN_WORKSPACE` and the orchestator picks them up. |
-| `hermes -z` (oneshot) | Main agent exits before workers finish. Use `hermes chat`. |
+| **`git push` / `gh pr` BANNED** | Workers have no GITHUB_TOKEN. Read-only via `curl`. |
 
 ## Project repo
 
