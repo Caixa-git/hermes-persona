@@ -219,6 +219,29 @@ Mitigation: minor receives **only** experience·personality·memory (no mission)
 
 Deterministic gate for when multi-persona is worthwhile. Not every task benefits from a minor — overuse wastes tokens and degrades role boundary clarity (CAMEL).
 
+**Ownership: WORKER-LEVEL only.** The CDPD evaluation is performed by the **worker**, not the gateway. The gateway CANNOT pass parameterized persona assignments (e.g., `--skill persona:main=X,minor=Y`) to workers — the tool API rejects comma-containing skill names. See "Philosophical Model" section below.
+
+The worker evaluates CDPD during KANBAN_GUIDANCE step 1-2 (after orienting, before picking a role):
+
+```
+Worker flow:
+  1. kanban_show() → orient, read task body
+  2. CDPD evaluation:
+     a. Extract keywords from task body
+     b. Classify against domain taxonomy
+     c. Compute S (cross-domain signal count)
+     d. If S >= 2 → multi-persona (main + minor)
+     e. If S < 2 → single persona (main only)
+  3. Fetch role catalog (step 2)
+  4. Pick main role + optional minor based on CDPD
+  5. Announce adoption (step 5)
+```
+
+The gateway's role is:
+- Assign the anima domain (via profile configuration)
+- Provide rich task context (clear body enables accurate CDPD)
+- NOT force persona — `persona:main=X` format is rejected by the tool API
+
 | 기호 | 명칭 | 값 | 의미 |
 |:----:|:-----|:---:|:------|
 | **S** | Sigma — Cross-Domain Signal Count | — | Task keywords outside major's category |
@@ -275,7 +298,13 @@ When the user says "use persona" or "페르소나를 사용해", the correct int
 
 1. **Do NOT self-adopt a specialist role.** The gateway agent (메카 위진수) is a **manager/orchestrator**, not a specialist worker.
 2. **Create a kanban worker with `--skill persona`.** Decompose the task and route it through a persona-enabled worker.
-3. **Verify adoption via heartbeat.** Confirm the worker's heartbeat shows both 🎭 Role and 🧠 Anima before proceeding.
+3. **Verify adoption via heartbeat.** Confirm the worker's heartbeat shows both 🎭 Role and 🧠 Anima before proceeding:
+   ```bash
+   hermes kanban show <task_id> | grep -E "🎭 Role|🧠 Anima"
+   ```
+   - 🎭 Role adopted = persona injection confirmed
+   - 🧠 Anima = anima injection confirmed
+   - Neither = worker crashed before adoption, or injection failed
 4. **Monitor execution.** The manager reviews output, does not block on it.
 5. **The gateway's Anima (System Thinker) governs manager decisions** — decomposition, role selection, result evaluation.
 
@@ -306,16 +335,63 @@ See `references/gateway-anima-design.md` for the full design and patch script (`
 | User says "페르소나를 사용해" → document-reading only | Correct behavior: create kanban worker with --skill persona |
 | No identity statement for gateway manager role | System Thinker Anima governs manager decisions |
 
+## Philosophical Model — Anima as Nature, Persona as Job
+
+### Core principle
+
+The persona/anima system follows a clear philosophical separation, verified by both design and empirical testing:
+
+```
+Anima = birth (출산). Assigned by the creator/gateway at spawn time.
+        The worker DOES NOT choose its nature. It IS its nature.
+        The gateway pre-loads anima via the persona-worker profile.
+
+Persona = job (직무). Self-selected by the worker for each task.
+         The gateway CANNOT force a persona on the worker.
+         The worker independently fetches the role catalog and picks.
+```
+
+### Architectural constraints (empirically verified)
+
+| Action | Mechanism | Result |
+|:-------|:----------|:-------|
+| Gateway assigns anima | Pre-load anima skill in persona-worker profile | ✅ Works. Worker heartbeats: "🧠 Anima: System Thinker" |
+| Gateway forces persona | `skills=["persona:main=X,minor=Y"]` in kanban_create | ❌ Rejected: "Unknown skill(s): persona:main=X,minor=Y" |
+| Gateway suggests persona | Task body includes role suggestion context | ✅ Informs worker without coercion |
+| Worker self-selects persona | KANBAN_GUIDANCE step 2 → fetches catalog → picks | ✅ Verified via heartbeat: "🎭 Role adopted: 🏛️ Software Architect" |
+
+### CDPD evaluation ownership
+
+The Cross-Domain Persona Decision (CDPD) model is evaluated by the **WORKER**, not the gateway. See the CDPD Model section under Multi-Persona for the worker-level evaluation procedure.
+
+The gateway does NOT need to evaluate CDPD. The worker will do it autonomously during step 1-2 of the KANBAN_GUIDANCE protocol. The gateway's job is to:
+1. Provide a well-structured task body (clear keywords enable accurate CDPD)
+2. Verify adoption via heartbeat after spawning
+3. Trust the worker's persona selection
+
 ## External Dependency: agency-agents
 
-Persona fetches role catalog from `https://github.com/msitarzewski/agency-agents` (GitHub raw). This is an **external repo** — not under your control.
+Persona fetches role catalog from `https://github.com/msitarzewski/agency-agents` (GitHub raw URLs pinned to commit SHA `783f6a72`). This is an **external repo** — not under your control.
+
+### SHA pinning status
+
+| Location | URL pattern | Status |
+|:---------|:------------|:------:|
+| **KANBAN_GUIDANCE** (prompt_builder.py step 2) | `.../agency-agents/783f6a72.../README.md` | ✅ SHA-pinned |
+| **KANBAN_GUIDANCE** (prompt_builder.py step 6) | `.../agency-agents/783f6a72.../{category}/{file}.md` | ✅ SHA-pinned |
+| **Persona SKILL.md step 2** | `.../agency-agents/783f6a72.../README.md` | ✅ SHA-pinned |
+| **Persona SKILL.md step 6** | `.../agency-agents/783f6a72.../{category}/{file}.md` | ✅ SHA-pinned |
+
+All four URLs use SHA `783f6a72bfd7f3135700ac273c619d92821b419a`. Neither `main` branch nor any mutable reference is used.
+
+**However**, SHA pinning prevents format-surprise but does **NOT** solve runtime availability — GitHub can still be down, rate-limited, or the repo made private. A pinned SHA + runtime curl is still a runtime dependency. The real fix is a **local catalog cache** at install time (see Medium-term mitigation below).
 
 ### Failure modes
 
 | Failure | Effect | Detection |
 |---------|--------|----------|
-| README.md format changes | Role list parsing breaks | Silent → no-role fallback |
-| File path changes | Role `.md` fetch fails | Silent → no-role fallback |
+| README.md at pinned SHA format changes | Role list parsing breaks | Silent → no-role fallback |  
+| File path at pinned SHA changes | Role `.md` fetch fails | Silent → no-role fallback |
 | Repo goes private | 401 on all fetches | Silent → no-role fallback |
 | GitHub raw temporary outage | Intermittent fetch failures | Silent → no-role fallback |
 
@@ -332,13 +408,16 @@ This lets the task timeline show when external dependency is the cause.
 
 ### Medium-term mitigation
 
-**1. Pin a specific commit SHA** — currently the catalog is fetched from `main` (mutable). Record the SHA at install time:
+**1. Local catalog cache — ✅ COMPLETE (2026-05-05)**
+At install time, clone the catalog to a local directory:
 ```bash
-AGENCY_SHA=$(curl -sL "https://api.github.com/repos/msitarzewski/agency-agents/commits/main" | jq -r '.sha')
-echo "$AGENCY_SHA" > ~/.hermes/skills/persona/agency-agents.sha
+git clone --depth=1 https://github.com/msitarzewski/agency-agents \
+  ~/.hermes/skills/persona/roles/agency-agents
 ```
+Step 3 reads from local path first (`cat ~/.hermes/skills/persona/roles/...`), with SHA-pinned GitHub URL as fallback.
 
-**2. Weekly SHA check** — GitHub Actions cron that creates a PR when SHA changes, so format-breaking changes are caught before they reach production.
+**2. Weekly SHA change detection — ⏳ TODO**
+GitHub Actions cron that checks whether the upstream SHA at `783f6a72` still exists.
 
 ## Behavior Matrix
 | Event | Action |
