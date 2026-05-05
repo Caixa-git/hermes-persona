@@ -416,7 +416,7 @@ git clone --depth=1 https://github.com/msitarzewski/agency-agents \
 ```
 Step 3 reads from local path first (`cat ~/.hermes/skills/persona/roles/...`), with SHA-pinned GitHub URL as fallback.
 
-**2. Weekly SHA change detection — ⏳ TODO**
+**2. Weekly SHA change detection — ✅ COMPLETE (`.github/workflows/sha-check.yml`)**
 GitHub Actions cron that checks whether the upstream SHA at `783f6a72` still exists.
 
 ## Behavior Matrix

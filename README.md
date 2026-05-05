@@ -57,7 +57,7 @@ Persona works alongside [anima](https://github.com/Caixa-git/hermes-anima), the 
 
 | Badge | Meaning |
 |-------|---------|
-| ![CI](https://img.shields.io/github/actions/workflow/status/Caixa-git/hermes-persona/ci.yml?style=flat-square&labelColor=1a1a2e&color=22c55e&label=CI) | 37 tests pass on `main` |
+| ![CI](https://img.shields.io/github/actions/workflow/status/Caixa-git/hermes-persona/ci.yml?style=flat-square&labelColor=1a1a2e&color=22c55e&label=CI) | Tests pass on `main` (CI badge) |
 | ![release](https://img.shields.io/github/v/release/Caixa-git/hermes-persona?style=flat-square&labelColor=1a1a2e&color=06b6d4) | Latest tagged release |
 | ![license](https://img.shields.io/badge/license-MIT-3b82f6?style=flat-square&labelColor=1a1a2e) | MIT — free to use, modify, distribute |
 
@@ -67,7 +67,7 @@ Persona works alongside [anima](https://github.com/Caixa-git/hermes-anima), the 
 bash <(curl -sSL https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh)
 ```
 
-The installer writes `skills/persona/SKILL.md` to your Hermes Agent skills directory, enables the `kanban` toolset, and patches KANBAN_GUIDANCE for worker identity context. Run `python3 test_benchmark.py` to verify (37 tests).
+The installer writes `skills/persona/SKILL.md` to your Hermes Agent skills directory, enables the `kanban` toolset, and patches KANBAN_GUIDANCE for worker identity context. Run `python3 test_benchmark.py` to verify.
 
 ## References
 

@@ -1,0 +1,70 @@
+name: SHA Pinned Reference Check
+
+on:
+  schedule:
+    # Weekly: Monday 09:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    # Manual trigger
+
+jobs:
+  sha-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check pinned SHA still exists upstream
+        id: check-sha
+        run: |
+          SHA="783f6a72bfd7f3135700ac273c619d92821b419a"
+          REPO="msitarzewski/agency-agents"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://api.github.com/repos/${REPO}/git/commits/${SHA}" \
+            2>/dev/null || echo "000")
+          
+          echo "status=${STATUS}" >> $GITHUB_OUTPUT
+          
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ SHA ${SHA:0:8} exists upstream"
+          elif [ "$STATUS" = "000" ]; then
+            echo "⚠️  Network error checking SHA ${SHA:0:8}"
+          else
+            echo "❌ SHA ${SHA:0:8} returned HTTP ${STATUS}"
+          fi
+      - name: Count SHA references in repo
+        run: |
+          COUNT=$(grep -rn "783f6a72" . --include="*.md" --include="*.py" --include="*.sh" --include="*.yml" \
+            --exclude-dir=.git | wc -l)
+          echo "📍 ${COUNT} SHA references found in repository"
+      - name: Create issue if SHA is missing
+        if: steps.check-sha.outputs.status != '200'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = '783f6a72bfd7f3135700ac273c619d92821b419a';
+            const short = sha.slice(0, 8);
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `⚠️ Pinned SHA ${short} no longer resolves upstream`,
+              body: [
+                `The pinned commit SHA \`${sha}\` (short: \`${short}\`)`,
+                `from [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents)`,
+                `returned HTTP \`${{ steps.check-sha.outputs.status }}\`.`,
+                '',
+                '**Impact:** All SHA-pinned curl URLs in SKILL.md and install.sh',
+                'will fall through to no-role fallback at runtime.',
+                '',
+                '**Action needed:**',
+                '1. Find the new SHA at the upstream repo',
+                '2. Update all ${COUNT} references across .md, .py, .sh, .yml files',
+                '3. Update this workflow to the new SHA',
+              ].join('\n'),
+              labels: ['dependency', 'security'],
+            });
+      - name: Update SKILL.md TODO status
+        run: |
+          SHA_STATUS="${{ steps.check-sha.outputs.status }}"
+          if [ "$SHA_STATUS" = "200" ]; then
+            echo "✅ TODO resolved automatically — SHA valid as of $(date -u)"
+          fi
