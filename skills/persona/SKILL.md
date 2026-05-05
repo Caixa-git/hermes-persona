@@ -56,11 +56,11 @@ Both **Persona** and **Anima** arrive at **Layer 13** — same proximity, differ
    - If **S < 2**: a **single** specialist role is sufficient.
    - The minor provides `향 (flavor)` — perspective and influence, not execution. The main role retains 100% decision authority.
 
-**3. Pick a role.** Fetch the README from the role catalog:
-   ```
-   # Primary: local catalog (fast, offline-safe)
+**3. Pick a role.** Read the role catalog from your local cache:
+   ```bash
+   # ALWAYS try local cache first:
    cat ~/.hermes/skills/persona/roles/agency-agents/README.md
-   # Fallback: GitHub (SHA-pinned)
+   # FALLBACK (local file missing):
    curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/README.md
    ```
    → scan all categories, 172+ specialist roles. Note the role's **emoji**.
@@ -94,7 +94,11 @@ Both **Persona** and **Anima** arrive at **Layer 13** — same proximity, differ
    - 🧠 Anima: {archetype-name}
 
 **7. Load the role specification** (what you DO):
-   ```
+   Read from your local catalog:
+   ```bash
+   # ALWAYS try local cache first:
+   cat ~/.hermes/skills/persona/roles/agency-agents/{category}/{filename}.md
+   # FALLBACK (local file missing):
    curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/{category}/{filename}.md
    ```
 
