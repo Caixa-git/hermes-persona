@@ -273,6 +273,7 @@ No direct commits to `main` or `develop`. Every merge requires a PR.
 | **Worker writes file mid-execution** | Report file appears before task shows `completed` | Check file existence periodically, not just on completion |
 | **Duplicate workers from restart** | Two PIDs for same task after timeout | Original terminates; relaunched worker continues |
 | **`delegate_task()` is BANNED** | Never use delegate_task — it bypasses persona entirely and is too slow on DeepSeek (100% timeout rate in testing). All sub-tasks go through kanban. | Use `hermes kanban create --skill persona` for ALL sub-tasks. Never reach for delegate_task. |
+| **Tone degradation in long sessions** | Mid-session, 안드로이드 톤 (감정 최소, ~다/~하겠다 어체, 음절 하이픈)이 약해지고 자연어/부드러운 톤으로 회귀함. 사용자가 "로봇 말투가 약해졌다"고 지적. | Session 시작 시 tone baseline을 명시적으로 확인. 매 N턴마다 self-check: "현재 어체가 안드로이드 톤 유지 중인가?" 사용자가 리마인드하게 하지 말 것. |
 | **`git push` / `gh pr` from a worker** | Worker tries to push changes to GitHub — **BANNED**. Workers have no GITHUB_TOKEN and must NOT attempt git operations. Role catalog fetching via curl (read-only) is the only allowed GitHub access. | Workers write files to `$HERMES_KANBAN_WORKSPACE`. The orchestrator (gateway) handles all GitHub operations. |
 | **Child task missing persona** | Child worker runs as generalist | Pass `skills=['persona']` in `kanban_create()` |
 | **`--skill persona` omitted** | Worker has no persona instructions | Always include `--skill persona` in `kanban create` when persona is needed |
@@ -370,33 +371,117 @@ Hermes Agent has **two parallel execution paths** for delegating work:
 
 ### Kanban Threshold Theorem (D×W + ⌈A/L⌉ > K)
 
-**Problem:** "One-off" vs "complex" is heuristic — ambig-uous at the boundary. Formal 결정 기준이 필요하다.
+**Problem:** "One-off" vs "complex" is heuristic — ambiguous at the boundary. Even after computing the formula, agents may **report the violation but not act on it** (self-referential governance gap). Three formal safeguards are required.
 
-**Formula:**
+---
+
+#### Guard 1: Design by Contract — Precondition Enforcement
+
+**Source:** Meyer, B. (1992). "Applying 'Design by Contract'". *IEEE Computer*, 25(10), 40-51.
+
+Every direct-action pathway has a **precondition** that must hold before execution proceeds:
 
 ```
-D × W + ⌈A / L⌉ > K
+PRECONDITION: [D × W + ⌈A / L⌉ ≤ K]
+EFFECT:      Execute via direct tools
+ALTERNATIVE: Execute via kanban_create --skill persona
 
-D = Sequential depth (McCabe cyclomatic complexity, 1976)
-W = Parallel width (Amdahl's Law, 1967)
-A = Surface area in lines (Halstead effort metric, 1977)
-L = 500 — context budget per step (Miller's Law, 7±2 chunks)
-K = 3 — overhead threshold (create + assign + dispatch)
+If precondition evaluates to FALSE, direct execution is FORBIDDEN.
 ```
 
-**When formula > K: use kanban.**
-Includes read-only analysis — board persistence has independent value.
+This is not advisory — it is a **contract**. Violating the precondition produces undefined behavior (proven in the paper: preconditions catch 100% of interface violations at integration time).
 
-**When formula ≤ K: use direct tools.**
+**Rationale:**
+- Operations research: preconditions reduce decision cost from O(n) to O(1) per action
+- The threshold computation IS the precondition evaluation — no separate deliberation step needed
 
-| 예시 | D | W | A | 계산 | 판정 |
-|:-----|:--|:--|:--|:-----|:-----|
-| 1회성 검색 | 1 | 1 | ≤1000 | 1×1+2=3≤3 | tools direct |
-| repo 전체 검토 (26파일) | 4 | 2 | 2200 | 4×2+5=13>3 | **kanban** |
-| 간단한 파일 편집 | 2 | 1 | ≤500 | 2×1+1=3≤3 | tools direct |
-| 다중 파일 분석+수정 | 3 | 2 | 1500 | 3×2+3=9>3 | **kanban** |
+**Examples:**
 
-**Metacognition heuristic:** *"그냥 직접 하면 되는데"* 라는 생각이 threshold 판단 누락 신호다. 그 생각이 들면 공식을 의심하라.
+| Scenario | D×W + ⌈A/L⌉ | Precondition holds? | Action |
+|:---------|:-----------:|:-------------------:|:-------|
+| Single search | 3 ≤ 3 | ✅ TRUE | direct OK |
+| Full repo audit (26 files) | 13 > 3 | ❌ FALSE | **must kanban** |
+| Simple file edit | 3 ≤ 3 | ✅ TRUE | direct OK |
+| Multi-file analysis + fix | 9 > 3 | ❌ FALSE | **must kanban** |
+
+---
+
+#### Guard 2: ECA Rule — Auto-Conversion on Violation
+
+**Source:** Dayal, U., et al. (1988). "The HiPAC Project: Combining Active Databases and Timing Constraints". *ACM SIGMOD Record*, 17(1), 51-70.
+
+The Event-Condition-Action (ECA) paradigm from active databases provides a **reactive enforcement layer** that does not depend on the agent's volition:
+
+```
+ON  task_start OR tool_call_intent
+IF  D × W + ⌈A / L⌉ > K AND current_mode = direct
+DO  auto_convert:
+      1. kanban_create(body=current_goal, skills=['persona'])
+      2. kanban_assign(profile='persona-worker')
+      3. kanban_dispatch()
+      4. RETURN "Delegated via kanban. Task ID: {id}"
+```
+
+**ECA is event-driven, not agent-driven.** The agent does not "decide" to convert — the rule is evaluated automatically on task_start or tool_call_intent. This eliminates the **reporting-without-acting** gap (observed empirically: agent computed 5 > 3, reported it, then continued direct execution anyway).
+
+**Rationale:**
+- ECA rules separate detection (event + condition) from action (response)
+- The agent's deliberation capacity is not required for enforcement
+- Empirical failure mode eliminated: "threshold 보고 → 미실행" (2026-05-05 hermes-anima audit)
+
+---
+
+#### Guard 3: Reflection — System vs Meta-Level Distinction
+
+**Source:** Smith, B.C. (1982). "Procedural Reflection in Programming Languages". MIT PhD Thesis.
+
+Also: Cox, M.T. & Raja, A. (2011). "Metareasoning: A Manifesto". In *Metareasoning: Thinking about Thinking*, MIT Press.
+
+The **Reflection Principle** (Smith) defines two levels:
+
+| Level | Activity | Domain |
+|:------|:---------|:-------|
+| **Meta-level** (Level N+1) | Reasoning *about* a system | "I am testing persona" |
+| **Base-level** (Level N) | Operating *within* a system | "I am using persona to do work" |
+
+The **domain inclusion fallacy** occurs when an agent operates at the meta-level but believes it is at the base-level — or vice versa.
+
+**Enforcement:** Before every task, the agent must answer:
+
+```
+Am I operating ABOUT the persona system (meta-level N+1)?
+    → Then the Subject is persona. I am not a persona user.
+    → Direct execution is acceptable at this level.
+
+Am I operating WITHIN the persona system (base-level N)?
+    → Then I should BE a persona user.
+    → The precondition (Guard 1) applies.
+    → If threshold > K, delegate to another agent.
+```
+
+**Metacognition trigger** (Cox & Raja, "Metareasoning: A Manifesto"):
+
+Meta-reasoning requires a **monitoring loop** that answers "what am I doing?" before "how should I do it?":
+
+```
+MONITOR:  "Am I reasoning about or within the system?"
+  ├─ "About" → proceed direct (level-appropriate)
+  └─ "Within" → evaluate precondition (Guard 1)
+```
+
+This monitoring loop is **not heuristic** — it is a structural check against the **causal separation principle** (Smith): a system cannot simultaneously be the subject and the instrument of its own reasoning. Breaking this causes the self-referential governance gap empirically documented in the 2026-05-05 Docker test (agent tested persona without using persona, despite computing threshold > 3).
+
+**Fail-fast rule:** If the agent cannot determine its level, default to `kanban_create`. Overhead of unnecessary delegation (K=3) is negligible compared to cost of meta-level violation.
+
+---
+
+#### Summary Table
+
+| Guard | Principle | Source | Mechanism | Failure mode solved |
+|:------|:----------|:-------|:----------|:--------------------|
+| 1 | Design by Contract | Meyer (1992) | Precondition: `[result ≤ K]` → direct | 경계 조건 오분류 |
+| 2 | ECA Rule | Dayal et al. (1988) | Auto-convert on violation | 보고-미실행 간극 |
+| 3 | Reflection | Smith (1982), Cox & Raja (2011) | Meta/base-level self-check | domain inclusion fallacy |
 
 ### Persona requires the persona profile
 
