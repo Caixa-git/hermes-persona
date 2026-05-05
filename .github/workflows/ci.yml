@@ -14,7 +14,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Copy SKILL.md
-        run: mkdir -p ~/.hermes/skills/persona && cp skills/persona/SKILL.md ~/.hermes/skills/persona/SKILL.md
-      - name: Run tests
-        run: python3 test_benchmark.py
+      - name: Copy SKILL.md to live path (for live-install tests)
+        run: |
+          mkdir -p ~/.hermes/skills/persona/references
+          cp skills/persona/SKILL.md ~/.hermes/skills/persona/SKILL.md
+          cp skills/persona/references/*.md ~/.hermes/skills/persona/references/
+      - name: Run tests (repo + live)
+        run: python3 test_benchmark.py --all

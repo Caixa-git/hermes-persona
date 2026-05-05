@@ -117,7 +117,7 @@ else
   fi
 fi
 
-# 3. Deploy durable constants module
+# 4. Deploy durable constants module
 echo -n "  Durable constants... "
 if [ -d "${HOME}/.hermes/hermes-agent/agent" ]; then
   cp "$(dirname "$0")/../agent/anima_persona.py" "${HOME}/.hermes/hermes-agent/agent/anima_persona.py" 2>/dev/null
@@ -126,7 +126,8 @@ if [ -d "${HOME}/.hermes/hermes-agent/agent" ]; then
   if [ -f "$PB" ]; then
     if ! grep -q "from agent.anima_persona import" "$PB" 2>/dev/null; then
       # Add import after utils import
-      sed -i '' '/^from utils import/a\\nfrom agent.anima_persona import ANIMA_PERSONA_LOADED, GATEWAY_PLATFORMS, GATEWAY_ANIMA_PERSONA_IDENTITY  # noqa: F401' "$PB" 2>/dev/null || \\\n      sed -i '/^from utils import/a\\nfrom agent.anima_persona import ANIMA_PERSONA_LOADED, GATEWAY_PLATFORMS, GATEWAY_ANIMA_PERSONA_IDENTITY  # noqa: F401' "$PB" 2>/dev/null
+      sed -i '' '/^from utils import/a\from agent.anima_persona import ANIMA_PERSONA_LOADED, GATEWAY_PLATFORMS, GATEWAY_ANIMA_PERSONA_IDENTITY  # noqa: F401' "$PB" 2>/dev/null || \
+      sed -i '/^from utils import/a\from agent.anima_persona import ANIMA_PERSONA_LOADED, GATEWAY_PLATFORMS, GATEWAY_ANIMA_PERSONA_IDENTITY  # noqa: F401' "$PB" 2>/dev/null
     fi
     echo -e "${GREEN}done${NC}"
   else
@@ -136,12 +137,44 @@ else
   echo -e "${YELLOW}hermes-agent not found${NC}"
 fi
 
-# 4. Validate
+# 5. Copy reference docs
+echo -n "  Reference docs... "
+REF_DIR="$DEST/references"
+mkdir -p "$REF_DIR"
+SCRIPT_DIR="$(dirname "$0")"
+REPO_REF="${SCRIPT_DIR}/../skills/persona/references"
+if [ -d "$REPO_REF" ]; then
+  cp "$REPO_REF"/*.md "$REF_DIR/" 2>/dev/null && echo -e "${GREEN}done${NC}" || echo -e "${YELLOW}some missing${NC}"
+else
+  echo -e "${YELLOW}reference directory not found${NC}"
+fi
+
+# 6. Copy helper scripts
+echo -n "  Helper scripts... "
+SCRIPTS_DIR="$DEST/scripts"
+mkdir -p "$SCRIPTS_DIR"
+REPO_SCRIPTS="${SCRIPT_DIR}/../skills/persona/scripts"
+if [ -d "$REPO_SCRIPTS" ]; then
+  for f in "$REPO_SCRIPTS"/*.py "$REPO_SCRIPTS"/*.sh; do
+    [ -f "$f" ] && cp "$f" "$SCRIPTS_DIR/" && echo -e "${GREEN}done${NC}" && break
+  done 2>/dev/null
+  # If the loop didn't print anything, print done for all copied
+  ls "$SCRIPTS_DIR"/*.py "$SCRIPTS_DIR"/*.sh 2>/dev/null | head -1 >/dev/null && echo -e "\r  Helper scripts... ${GREEN}done${NC}" || echo -e "${YELLOW}none found${NC}"
+else
+  echo -e "${YELLOW}scripts directory not found${NC}"
+fi
+
+# 7. Validate
 echo ""
 if [ -f "$DEST/SKILL.md" ]; then
   echo -e "${GREEN}✅${NC} hermes-persona installed"
   echo ""
-  echo "Usage:"
+  echo "  Installed:"
+  echo "    $DEST/SKILL.md"
+  echo "    $DEST/references/    ($(ls "$DEST/references/"*.md 2>/dev/null | wc -l) reference docs)"
+  echo "    $DEST/scripts/      ($(ls "$DEST/scripts/"*.py "$DEST/scripts/"*.sh 2>/dev/null | wc -l) helper scripts)"
+  echo "    $DEST/roles/         (172+ role files)"
+  echo "    ${HOME}/.hermes/hermes-agent/agent/anima_persona.py"
   echo "  hermes kanban create 'Build auth API' --skill persona"
   echo "  hermes kanban assign t_xxxx persona-worker"
   echo "  hermes kanban dispatch"
