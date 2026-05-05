@@ -32,6 +32,7 @@ tags: [hermes-agent, kanban, persona]
 - Anima (core nature) is separate — see `hermes-anima` for definition and OCEAN profiles.
 - When `--skill persona` active and confidence < 30%: proceed WITHOUT a specialist role. Task defines the frame.
 - Anima > Persona on conflict. This is a cross-layer contract, not defined here.
+- Identity statement purity: see `references/identity-statement-conventions.md` for "You ARE" level wording guidelines.
 
 ## File Purity
 <rule>This skill is PERSONA-ONLY. Anima content (OCEAN profiles, anima experiments, anima-layer tests, anima-persona papers) belongs in `hermes-anima`, NOT here.</rule>
@@ -145,12 +146,46 @@ Experiment (2026-05-05): Multi-persona beats sequential task-split **7-0** on "w
 - [ ] Multi-model multi-persona: major on model A, minor on model B (bypasses Reasoning Trap)
 - [ ] Calibration protocol: automated test suite to re-derive Φ, α, β, Γ_base for new models
 
+## External Dependency: agency-agents
+
+Persona fetches role catalog from `https://github.com/msitarzewski/agency-agents` (GitHub raw). This is an **external repo** — not under your control.
+
+### Failure modes
+
+| Failure | Effect | Detection |
+|---------|--------|----------|
+| README.md format changes | Role list parsing breaks | Silent → no-role fallback |
+| File path changes | Role `.md` fetch fails | Silent → no-role fallback |
+| Repo goes private | 401 on all fetches | Silent → no-role fallback |
+| GitHub raw temporary outage | Intermittent fetch failures | Silent → no-role fallback |
+
+**Critical gap:** All failures silently fall through to "no-role fallback" without distinguishing "no matching role found" from "external service unavailable." The system degrades gracefully but **invisibly** — you won't know agency-agents is down until output quality drops.
+
+### Short-term mitigation
+
+Workers should distinguish fallback reasons in `kanban_heartbeat`:
+```
+✅ "No specialist role matches confidence ≥30%"
+⚠️ "No specialist role matches: agency-agents unavailable (curl failed)"
+```
+This lets the task timeline show when external dependency is the cause.
+
+### Medium-term mitigation
+
+**1. Pin a specific commit SHA** — currently the catalog is fetched from `main` (mutable). Record the SHA at install time:
+```bash
+AGENCY_SHA=$(curl -sL "https://api.github.com/repos/msitarzewski/agency-agents/commits/main" | jq -r '.sha')
+echo "$AGENCY_SHA" > ~/.hermes/skills/persona/agency-agents.sha
+```
+
+**2. Weekly SHA check** — GitHub Actions cron that creates a PR when SHA changes, so format-breaking changes are caught before they reach production.
+
 ## Behavior Matrix
 | Event | Action |
 |-------|--------|
 | delegate_task() called | STOP → kanban_create --skill persona |
 | Child missing persona | Pass `skills=['persona']` in kanban_create |
 | git push attempted | Workers have NO GITHUB_TOKEN. Orchestrator only. |
-| No role matches >30% | Proceed without role. Do not force mismatch. |
-| GitHub raw unavailable | No-role fallback. Curl failure = expected. |
+| No role matches >30% | Proceed without role. Must annotate `kanban_heartbeat` with fallback reason. |
+| GitHub raw unavailable | No-role fallback. Annotate heartbeat: `(agency-agents unavailable)`. |
 | `--skill persona` omitted | Worker runs without persona instructions |
