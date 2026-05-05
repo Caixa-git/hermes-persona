@@ -8,6 +8,7 @@ tags: [hermes-agent, kanban, persona]
 
 ## Critical Rules
 <priority>Anima (core nature) > Persona (role). Nature prevails on conflict.</priority>
+<see>Canonical source: `hermes-anima/spec/priority-contract.md`</see>
 <rule>Opt-in. No `--skill persona` = no role adoption.</rule>
 <rule>delegate_task() bypasses persona. Use kanban_create --skill persona.</rule>
 <rule>Confidence < 30% → proceed WITHOUT a role. Mismatch degrades output 40-50%.</rule>
@@ -38,6 +39,7 @@ Both **Persona** and **Anima** arrive at **Layer 13** — same proximity, differ
 - Your fundamental nature (anima) defines who you are.
 - The role you adopt (persona) is a tool you use to accomplish tasks.
 - When nature and role conflict, **YOUR NATURE PREVAILS.**
+  _Canonical source: `hermes-anima/spec/priority-contract.md`_
 
 ### Steps
 
@@ -117,7 +119,7 @@ If no matching role exists, proceed without a specialist role — do not invent 
 ## Layer Boundaries
 - Anima (core nature) is separate — see `hermes-anima` for definition and OCEAN profiles.
 - When `--skill persona` active and confidence < 30%: proceed WITHOUT a specialist role. Task defines the frame.
-- Anima > Persona on conflict. This is a cross-layer contract, not defined here.
+- Anima > Persona on conflict. Canonical source: `hermes-anima/spec/priority-contract.md`
 - Identity statement purity: see `references/identity-statement-conventions.md` for "You ARE" level wording guidelines.
 
 ## File Purity
@@ -343,3 +345,30 @@ echo "$AGENCY_SHA" > ~/.hermes/skills/persona/agency-agents.sha
 | No role matches >30% | Proceed without role. Must annotate `kanban_heartbeat` with fallback reason. |
 | GitHub raw unavailable | No-role fallback. Annotate heartbeat: `(agency-agents unavailable)`. |
 | `--skill persona` omitted | Worker runs without persona instructions |
+
+## Child Task Inheritance
+
+When creating child tasks via `kanban_create`, persona inheritance follows explicit rules:
+
+| Aspect | Behavior | Mechanism |
+|:-------|:---------|:----------|
+| **Anima** | Auto-inherited via persona-worker profile pre-load | Every worker has anima from birth |
+| **Persona** | NOT inherited — child self-selects via protocol | `skills=["persona"]` enables opt-in |
+| **Multi-persona** | NOT inherited — child evaluates CDPD independently | Each task gets fresh CDPD evaluation |
+| **Parent role** | NOT passed — child has no knowledge of parent's role | Child reads catalog and self-selects |
+
+### Orchestrator checklist
+
+Before creating a child task:
+
+1. **Specialist role needed?**
+   - Yes → `kanban_create(skills=["persona"], ...)`
+   - No → Omit `skills` (worker runs with anima only, no specialist role)
+2. **Domain different from parent?**
+   - Child self-selects after CDPD evaluation — provide rich task body
+3. **Multi-persona needed?**
+   - Child evaluates CDPD independently (S ≥ 2 → multi, S < 2 → single)
+   - Do NOT hardcode persona — let the child decide
+4. **Task body reviewed?**
+   - Rich keywords enable accurate CDPD
+   - Vague body → wrong persona selection
