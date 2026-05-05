@@ -14,4 +14,4 @@
 
 ## Verdict
 
-This repo distributes a **prompt file** (`SKILL.md`). No executable code, no credentials, no network write operations. Risk profile: minimal. Full methodology in `archive/references/security-audit-methodology.md`.
+This repo distributes a **prompt file** (`SKILL.md`). No executable code, no credentials, no network write operations. Risk profile: minimal.
