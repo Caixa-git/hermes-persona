@@ -54,8 +54,11 @@ Both **Persona** and **Anima** arrive at **Layer 13** — same proximity, differ
    - If **S < 2**: a **single** specialist role is sufficient.
    - The minor provides `향 (flavor)` — perspective and influence, not execution. The main role retains 100% decision authority.
 
-**3. Pick a role.** Fetch the README from the agency-agents repository:
+**3. Pick a role.** Fetch the README from the role catalog:
    ```
+   # Primary: local catalog (fast, offline-safe)
+   cat ~/.hermes/skills/persona/roles/agency-agents/README.md
+   # Fallback: GitHub (SHA-pinned)
    curl -s https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/README.md
    ```
    → scan all categories, 172+ specialist roles. Note the role's **emoji**.
@@ -71,9 +74,11 @@ Both **Persona** and **Anima** arrive at **Layer 13** — same proximity, differ
 
 **5. Your anima is always active.** Fetch your core nature profile:
    ```
-   curl -s https://raw.githubusercontent.com/Caixa-git/hermes-anima/main/skills/anima/profiles/{domain}.md
+   # Primary: local profile (fast, offline-safe)
+   cat ~/.hermes/skills/anima/profiles/{domain}.md
+   # Fallback: GitHub (SHA-pinned)
+   curl -s https://raw.githubusercontent.com/Caixa-git/hermes-anima/9cfba350368cb61614dd97d2abc5d3986548d4fc/skills/anima/profiles/{domain}.md
    ```
-   If GitHub is unreachable, the profile is also available locally at `~/.hermes/skills/anima/profiles/{domain}.md`
 
    Available anima domains: engineering, design, sales, marketing, product, paid-media, operations, management, research, education, healthcare, ai-ml, gaming, legal, specialized.
 
@@ -120,6 +125,28 @@ If no matching role exists, proceed without a specialist role — do not invent 
 <rule>If any reference or script under this skill contains anima-exclusive content, it must be moved to hermes-anima and deleted from this directory.</rule>
 
 ## Content Boundaries
+
+## Installation Detection
+
+Check if persona skill is active:
+```bash
+[ -f ~/.hermes/skills/persona/SKILL.md ] \
+  && echo "persona active" \
+  || echo "persona not installed"
+```
+
+Check if anima profiles are installed:
+```bash
+ls ~/.hermes/skills/anima/profiles/*.md 2>/dev/null | wc -l
+# Expected: 16+ profiles
+```
+
+Check if role catalog is cached locally:
+```bash
+[ -f ~/.hermes/skills/persona/roles/agency-agents/README.md ] \
+  && echo "local catalog: present" \
+  || echo "local catalog: missing (GitHub fallback)"
+```
 
 <rule>This SKILL.md is a **public/shared component**. Personal user preferences (tone, style, communication format) belong in USER MEMORY, not in this file.</rule>
 
