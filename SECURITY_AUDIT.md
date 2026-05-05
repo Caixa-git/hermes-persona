@@ -1,7 +1,7 @@
 # Security Audit — hermes-persona
 
 **Repository:** https://github.com/Caixa-git/hermes-persona
-**Date:** 2026-05-05
+**Date:** 2026-05-06
 
 ## Risk Assessment
 

@@ -31,7 +31,8 @@ python3 test_benchmark.py
 - [ ] SKILL.md YAML frontmatter is valid
 - [ ] All referenced URLs use SHA-pinned commits (not `main` branch)
 - [ ] `pyproject.toml` version matches git tag (if tagging)
-- [ ] `.gitignore` covers any new file types
+- SHA change detection: `.github/workflows/sha-check.yml` runs weekly + on push to main
+- `develop` branch is **stale** (behind `main`). New work branches from `main`.
 
 ## Design principles
 

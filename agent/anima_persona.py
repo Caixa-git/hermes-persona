@@ -1,5 +1,5 @@
-"""
-anima_persona.py — Durable anima + persona identity constants.
+#!/usr/bin/env python3
+"""anima_persona.py — Durable anima + persona identity constants.
 
 This module is the SINGLE durable home for anima/persona identity constants.
 It is imported by prompt_builder.py (and via it, run_agent.py).

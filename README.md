@@ -67,7 +67,20 @@ Persona works alongside [anima](https://github.com/Caixa-git/hermes-anima), the 
 bash <(curl -sSL https://raw.githubusercontent.com/Caixa-git/hermes-persona/main/install.sh)
 ```
 
-The installer writes `skills/persona/SKILL.md` to your Hermes Agent skills directory, enables the `kanban` toolset, and patches KANBAN_GUIDANCE for worker identity context. Run `python3 test_benchmark.py` to verify.
+The installer writes `skills/persona/SKILL.md` to your Hermes Agent skills directory, enables the `kanban` toolset, and patches KANBAN_GUIDANCE for worker identity context.
+
+## Post-install verification
+
+```bash
+# Quick check (offline-safe)
+python3 test_benchmark.py --offline
+
+# Identity section verification
+python3 skills/persona/scripts/verify-identity-section.py --prompt-builder-only
+
+# Full suite (requires network)
+python3 test_benchmark.py
+```
 
 ## References
 

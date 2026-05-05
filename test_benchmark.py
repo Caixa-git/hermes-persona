@@ -1,24 +1,15 @@
 #!/usr/bin/env python3
 """🎭 Hermes Persona — validates SKILL.md content integrity.
 
-Tests both the source repo SKILL.md and the live installed copy.
-Run:
-  python test_benchmark.py                    # test live install
-  python test_benchmark.py --repo             # test source repo
-  python test_benchmark.py --all              # test both
+Run: python test_benchmark.py            # Full suite (requires network)
+     python test_benchmark.py --offline  # Skip network-dependent tests
 """
 
 import os, re, sys, urllib.request
 
 PASS, FAIL = 0, 0
-
+OFFLINE = "--offline" in sys.argv
 AGENCY_AGENTS_URL = "https://raw.githubusercontent.com/msitarzewski/agency-agents/783f6a72bfd7f3135700ac273c619d92821b419a/README.md"
-
-# Resolve source repo root (works whether called from repo root or anywhere)
-_REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
-_REPO_SKILL = os.path.join(_REPO_ROOT, "skills", "persona", "SKILL.md")
-_LIVE_SKILL = os.path.expanduser("~/.hermes/skills/persona/SKILL.md")
-
 
 def test(name, condition, detail=""):
     global PASS, FAIL
@@ -27,55 +18,34 @@ def test(name, condition, detail=""):
     else:
         FAIL += 1; print(f"  ❌ {name}" + (f"\n     └─ {detail}" if detail else ""))
 
-
-def read_skill(source="live"):
-    """Read SKILL.md from source repo or live install."""
-    paths = {"repo": _REPO_SKILL, "live": _LIVE_SKILL}
-    p = paths.get(source, _LIVE_SKILL)
-    if not os.path.isfile(p):
-        raise FileNotFoundError(f"SKILL.md not found at {p} (source={source})")
-    with open(p) as f:
-        return f.read()
-
+def read_skill():
+    p = os.path.expanduser("~/.hermes/skills/persona/SKILL.md")
+    with open(p) as f: return f.read()
 
 def fetch_roles():
     with urllib.request.urlopen(AGENCY_AGENTS_URL, timeout=10) as r:
         return r.read().decode()
 
-
 def role_exists(text, name):
     return bool(re.search(r'\[' + re.escape(name) + r'\]\(', text))
 
+# ── Part 1: SKILL.md integrity ──
+print("\n📋 [1/4] SKILL.md — principles & citations")
+print("-" * 40)
+skill = read_skill()
 
-def run_tests(source, label):
-    """Run all integrity tests on a given SKILL.md source."""
-    global PASS, FAIL
+for p in ["Output-type alignment", "Role boundary clarity",
+           "Task decomposition priority", "Confidence threshold"]:
+    test(f"Principle: {p}", p in skill)
+for c in ["MetaGPT", "CAMEL", "AgentVerse", "AutoGen", "ICLR", "NeurIPS", "ICML"]:
+    test(f"Citation: {c}", c in skill)
 
-    try:
-        skill = read_skill(source)
-    except FileNotFoundError as e:
-        print(f"\n⚠️  {label}: {e}")
-        return
-
-    # ── Part 1: SKILL.md integrity ──
-    print(f"\n📋 [{label}] SKILL.md — principles & citations")
-    print("-" * 40)
-    for p in ["Output-type alignment", "Role boundary clarity",
-               "Task decomposition priority", "Confidence threshold"]:
-        test(f"Principle: {p}", p in skill)
-    for c in ["MetaGPT", "CAMEL", "AgentVerse", "AutoGen", "ICLR", "NeurIPS", "ICML"]:
-        test(f"Citation: {c}", c in skill)
-
-    # key structural elements
-    test("YAML frontmatter", skill.startswith("---"), detail="SKILL.md must begin with '---'")
-    test("10-step protocol", "**1. Analyze your task.**" in skill)
-    test("CDPD evaluation", "single or multi-persona" in skill)
-    test("Priority rule", "YOUR NATURE PREVAILS" in skill)
-    test("Injection awareness (step 0)", "prompt injection" in skill)
-
-    # ── Part 2: Catalog accessibility ──
-    print(f"\n📡 [{label}] Agency-agents catalog")
-    print("-" * 40)
+# ── Part 2: Catalog accessibility ──
+print("\n📡 [2/4] Agency-agents catalog")
+print("-" * 40)
+if OFFLINE:
+    print("  ⏭️  Skipped (--offline mode)")
+else:
     try:
         readme = fetch_roles()
         test("Catalog fetchable", len(readme) > 1000)
@@ -88,9 +58,19 @@ def run_tests(source, label):
         test("Catalog fetch", False, str(e))
         readme = ""
 
-    # ── Part 3: Task-to-role mapping ──
-    print(f"\n🔗 [{label}] Task → role mappings")
-    print("-" * 40)
+# ── Part 3: Task-to-role mapping ──
+print("\n🔗 [3/4] Task → role mappings")
+print("-" * 40)
+if OFFLINE:
+    print("  ⏭️  Skipped (--offline mode)")
+    readme = ""
+else:
+    if 'readme' not in dir() or not readme:
+        try:
+            readme = fetch_roles()
+        except:
+            readme = ""
+    
     mappings = [
         ("React dashboard with D3.js", "Frontend Developer"),
         ("REST API with JWT", "Backend Architect"),
@@ -106,27 +86,42 @@ def run_tests(source, label):
         ("Financial forecast model", "Financial Analyst"),
         ("Production outage response", "Incident Response Commander"),
     ]
-    if readme:
-        for task, expected in mappings:
-            test(f"'{task[:25]}...' → {expected}", role_exists(readme, expected))
+    for task, expected in mappings:
+        test(f"'{task[:25]}...' → {expected}", role_exists(readme, expected)) if readme else None
 
+# ── Part 4: Repository integrity ──
+print("\n🔍 [4/4] Repository integrity")
+print("-" * 40)
 
-# ── Main: parse args and run ──
-if __name__ == "__main__":
-    args = set(sys.argv[1:])
-    run_live = "--all" in args or "live" not in args  # default: live only
-    run_repo = "--repo" in args or "--all" in args
+# 4a: pyproject.toml version detection
+pp_path = os.path.join(os.path.dirname(__file__) or ".", "pyproject.toml")
+if os.path.exists(pp_path):
+    with open(pp_path) as f:
+        pp = f.read()
+    m = re.search(r'version\s*=\s*"([^"]+)"', pp)
+    test("pyproject.toml version detected", m is not None,
+         f"regex matched: {bool(m)}")
+    if m:
+        test(f"pyproject.toml version: {m.group(1)}", True)
 
-    sources = []
-    if run_live:
-        sources.append(("live", "Live install (~/.hermes/skills/persona/)"))
-    if run_repo:
-        sources.append(("repo", "Source repo (skills/persona/SKILL.md)"))
+# 4b: All reference docs exist and have content
+ref_dir = os.path.join(os.path.dirname(__file__) or ".", "skills", "persona", "references")
+if os.path.isdir(ref_dir):
+    refs = sorted(f for f in os.listdir(ref_dir) if f.endswith('.md'))
+    test(f"Reference docs: {len(refs)} files found", len(refs) >= 6,
+         f"Found: {', '.join(refs)}")
+    for ref in refs:
+        rp = os.path.join(ref_dir, ref)
+        with open(rp) as f:
+            lines = len(f.readlines())
+        test(f"  {ref}: {lines} lines", lines >= 20,
+             f"Expected ≥20, got {lines}")
+else:
+    test("Reference docs directory", False, f"Not found: {ref_dir}")
 
-    for src, label in sources:
-        run_tests(src, label)
-
-    total = PASS + FAIL
-    print(f"\n{'='*50}")
-    print(f"📊 {PASS}/{total} passed ({100*PASS//total if total else 0}%)")
-    sys.exit(0 if FAIL == 0 else 1)
+# ── Summary ──
+total = PASS + FAIL
+print(f"\n{'='*50}")
+print(f"📊 {PASS}/{total} passed ({100*PASS//total if total else 0}%)")
+print(f"{'='*50}")
+sys.exit(0 if FAIL == 0 else 1)

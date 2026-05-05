@@ -285,89 +285,13 @@ Experiment (2026-05-05): Multi-persona beats sequential task-split **7-0** on "w
 
 ## Gateway Identity & Persona Contract
 
-**The agent architecture has two distinct identities:**
-
-| Agent | Anima | Persona | Mechanism |
-|:------|:------|:--------|:----------|
-| **Gateway (메카 위진수)** | System Thinker (25 tok) | Manager/Orchestrator | `GATEWAY_ANIMA_PERSONA_IDENTITY` injected via `run_agent.py` |
-| **Kanban worker** | Domain profile (hermes-anima) | Specialist (agency-agents) | `KANBAN_GUIDANCE` identity section (Layer 3) |
-
-### "페르소나를 사용해" — what this actually means
-
-When the user says "use persona" or "페르소나를 사용해", the correct interpretation is:
-
-1. **Do NOT self-adopt a specialist role.** The gateway agent (메카 위진수) is a **manager/orchestrator**, not a specialist worker.
-2. **Create a kanban worker with `--skill persona`.** Decompose the task and route it through a persona-enabled worker.
-3. **Verify adoption via heartbeat.** Confirm the worker's heartbeat shows both 🎭 Role and 🧠 Anima before proceeding:
-   ```bash
-   hermes kanban show <task_id> | grep -E "🎭 Role|🧠 Anima"
-   ```
-   - 🎭 Role adopted = persona injection confirmed
-   - 🧠 Anima = anima injection confirmed
-   - Neither = worker crashed before adoption, or injection failed
-4. **Monitor execution.** The manager reviews output, does not block on it.
-5. **The gateway's Anima (System Thinker) governs manager decisions** — decomposition, role selection, result evaluation.
-
-### Current implementation
-
-Since 2026-05-05, a lightweight `GATEWAY_ANIMA_PERSONA_IDENTITY` (~105 tokens) is injected into the gateway's system prompt via `run_agent.py:_build_system_prompt()` when:
-- `self.platform in GATEWAY_PLATFORMS` (discord, telegram, slack, cli, etc.)
-- `"kanban_show" not in self.valid_tool_names` (mutually exclusive with kanban workers)
-
-See `references/gateway-anima-design.md` for the full design and patch script (`scripts/patch-gateway-anima-persona.py`).
-
-### What the gateway identity includes
-- **Anima:** Core Identity Statement (25 tokens) — "You ARE a SYSTEM THINKER."
-- **Persona Contract:** 5 gateway delegation rules (75 tokens)
-  - 1. USE `kanban_create --skill persona` — never `delegate_task`
-  - 2. VERIFY worker adopts persona via heartbeat
-  - 3. VERIFY worker's anima via heartbeat
-  - 4. TRUST worker to execute within persona + anima
-  - 5. REVISE only if output does not match (nature > role)
-- **Priority rule:** \"When role conflicts with your nature, YOUR NATURE PREVAILS.\"
-
-### Critical gap resolved (2026-05-05)
-
-| Before | After |
-|--------|-------|
-| Gateway reads SKILL.md as reference only — no enforcement | Gateway system prompt contains Persona Contract with enforceable rules |
-| `delegate_task` rule exists in SKILL.md but not enforced | Persona Contract rule 1: "never delegate_task — always kanban_create" |
-| User says "페르소나를 사용해" → document-reading only | Correct behavior: create kanban worker with --skill persona |
-| No identity statement for gateway manager role | System Thinker Anima governs manager decisions |
+→ See `references/gateway-contract.md` for the full gateway identity design,
+  "페르소나를 사용해" interpretation, implementation details, and resolved gaps.
 
 ## Philosophical Model — Anima as Nature, Persona as Job
 
-### Core principle
-
-The persona/anima system follows a clear philosophical separation, verified by both design and empirical testing:
-
-```
-Anima = birth (출산). Assigned by the creator/gateway at spawn time.
-        The worker DOES NOT choose its nature. It IS its nature.
-        The gateway pre-loads anima via the persona-worker profile.
-
-Persona = job (직무). Self-selected by the worker for each task.
-         The gateway CANNOT force a persona on the worker.
-         The worker independently fetches the role catalog and picks.
-```
-
-### Architectural constraints (empirically verified)
-
-| Action | Mechanism | Result |
-|:-------|:----------|:-------|
-| Gateway assigns anima | Pre-load anima skill in persona-worker profile | ✅ Works. Worker heartbeats: "🧠 Anima: System Thinker" |
-| Gateway forces persona | `skills=["persona:main=X,minor=Y"]` in kanban_create | ❌ Rejected: "Unknown skill(s): persona:main=X,minor=Y" |
-| Gateway suggests persona | Task body includes role suggestion context | ✅ Informs worker without coercion |
-| Worker self-selects persona | KANBAN_GUIDANCE step 2 → fetches catalog → picks | ✅ Verified via heartbeat: "🎭 Role adopted: 🏛️ Software Architect" |
-
-### CDPD evaluation ownership
-
-The Cross-Domain Persona Decision (CDPD) model is evaluated by the **WORKER**, not the gateway. See the CDPD Model section under Multi-Persona for the worker-level evaluation procedure.
-
-The gateway does NOT need to evaluate CDPD. The worker will do it autonomously during step 1-2 of the KANBAN_GUIDANCE protocol. The gateway's job is to:
-1. Provide a well-structured task body (clear keywords enable accurate CDPD)
-2. Verify adoption via heartbeat after spawning
-3. Trust the worker's persona selection
+→ See `references/philosophical-model.md` for core principles,
+  architectural constraints, CDPD ownership, and priority rules.
 
 ## External Dependency: agency-agents
 
