@@ -198,9 +198,9 @@ repo_path = os.path.dirname(os.path.abspath(__file__))
 
 # Python scripts
 py_scripts = [
-    "scripts/generate-role-manifest.py",
-    "scripts/generate-sbom.py",
-    "scripts/scan-role-content.py",
+    "archive/scripts/generate-role-manifest.py",
+    "archive/scripts/generate-sbom.py",
+    "archive/scripts/scan-role-content.py",
 ]
 import subprocess
 for script in py_scripts:
